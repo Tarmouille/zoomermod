@@ -6,6 +6,8 @@ Mod fan-made pour **Dale & Dawson Stationery Supplies** : nouvelles tâches, rô
 
 **Ce mod est fait pour être joué en serveur privé uniquement, entre joueurs qui ont tous le mod. Ne l'utilise pas en partie publique.**
 
+Ce mod est **vibe codé** : écrit en grande partie avec une IA (Claude), testé en jeu entre amis. Attends-toi à quelques bugs.
+
 ## Installation
 
 1. Télécharge le zip de la dernière version dans [Releases](../../releases).
