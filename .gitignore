@@ -19,3 +19,6 @@ DaleMod/Assets/cookiemonster.wav
 # Raccourcis perso (chemin du jeu en dur)
 mod-on.cmd
 mod-off.cmd
+
+# Bannières de pub (images trouvées) : dans le zip de release seulement
+DaleMod/Assets/popups/
