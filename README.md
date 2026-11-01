@@ -4,6 +4,8 @@
 
 Mod fan-made pour **Dale & Dawson Stationery Supplies** : nouvelles tâches, rôles et effets, à jouer entre amis.
 
+**Ce mod est fait pour être joué en serveur privé uniquement, entre joueurs qui ont tous le mod. Ne l'utilise pas en partie publique.**
+
 ## Installation
 
 1. Télécharge le zip de la dernière version dans [Releases](../../releases).
@@ -12,7 +14,7 @@ Mod fan-made pour **Dale & Dawson Stationery Supplies** : nouvelles tâches, rô
 4. Lance le jeu depuis Steam. Le premier lancement est long (1 à 3 minutes).
 
 Si tout marche, `ZoomerMod vX.Y.Z` s'affiche en bas à droite du menu principal.
-Tout le monde dans la partie doit avoir la même version. Joue uniquement en lobby privé avec des gens qui ont le mod.
+Tout le monde dans la partie doit avoir la même version. **Joue uniquement en lobby privé, avec des gens qui ont le mod.**
 
 `ZoomerMod OFF.bat` / `ZoomerMod ON.bat` (dans le dossier du jeu) désactivent / réactivent le mod.
 
