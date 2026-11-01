@@ -106,8 +106,9 @@ Le chemin du jeu est dans `DaleMod/DaleMod.csproj` (`GameDir`) et `tools/package
 Les médias sous droits d'auteur ne sont pas dans le dépôt : la vidéo et certains sons sont dans le zip de release
 (`BepInEx/plugins/DaleMod/Assets/`), à poser dans `DaleMod/Assets/`.
 
-La musique du karaoké n'est ni dans le dépôt ni dans le zip : c'est un pack à part (`Assets/karaoke/`). Sans lui, la
-tâche Karaoké ne sort jamais. Dans une partie, tout le monde doit avoir le pack, ou personne.
+La musique du karaoké et les bannières de pub ne sont ni dans le dépôt ni dans le zip : c'est un pack média à part
+(`Assets/karaoke/`, `Assets/popups/`, zip `dist/ZoomerMod-media-<version>.zip` produit par `package.ps1`). Sans lui, la
+tâche Karaoké ne sort jamais et les pubs sont en texte. Dans une partie, tout le monde doit avoir le pack, ou personne.
 
 ## Crédits
 
