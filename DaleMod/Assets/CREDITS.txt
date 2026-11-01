@@ -1,0 +1,4 @@
+sniff.wav : "Sniffing" par spookymodem, CC-BY 3.0
+  https://opengameart.org/content/sniffing
+cokebag.obj : généré par tools/make_bag.py (DaleMod)
+cookiemonster.wav : fourni par l'utilisateur (converti depuis cookiemonster.mp3)

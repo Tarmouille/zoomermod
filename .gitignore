@@ -1,0 +1,21 @@
+# Build
+bin/
+obj/
+dist/
+
+# Logs, captures, fichiers de travail
+*.log
+preview_*.png
+originals/
+DaleMod/sources/
+
+# Médias sous droits d'auteur (musique, pochette, vidéo, extraits) : pas dans le dépôt public,
+# uniquement dans le zip de release. À poser à la main dans DaleMod/Assets/ pour un build complet.
+*.mp3
+DaleMod/Assets/karaoke/
+DaleMod/Assets/bestof.mp4
+DaleMod/Assets/cookiemonster.wav
+
+# Raccourcis perso (chemin du jeu en dur)
+mod-on.cmd
+mod-off.cmd
