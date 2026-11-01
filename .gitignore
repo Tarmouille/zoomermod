@@ -9,8 +9,8 @@ preview_*.png
 originals/
 DaleMod/sources/
 
-# Médias sous droits d'auteur (musique, pochette, vidéo, extraits) : pas dans le dépôt public,
-# uniquement dans le zip de release. À poser à la main dans DaleMod/Assets/ pour un build complet.
+# Médias sous droits d'auteur : pas dans le dépôt public. Le karaoké (chanson + pochette) est un pack à part ;
+# la vidéo et le son ci-dessous sont dans le zip de release. À poser à la main dans DaleMod/Assets/.
 *.mp3
 DaleMod/Assets/karaoke/
 DaleMod/Assets/bestof.mp4

@@ -18,12 +18,22 @@ namespace DaleMod;
 // Tâche "Karaoké" (rouge, Slacker ; voir TaskPools) : 1) mettre le CD de Lady Gaga dans la chaîne de la salle de pause ;
 // 2) chanter 15 s dans la salle de pause pendant la chanson, sans que le manager entre dans la pièce (sinon il coupe la
 // musique chez tous et il faut relancer le CD).
+// La chanson n'est pas dans le zip public (droits d'auteur) : pack à part. Sans Assets\karaoke\pokerface.wav, pas de CD
+// ni de tâche (TaskPools). Tout le monde dans la partie doit avoir le pack, ou personne (sinon les n° de CD diffèrent).
 static class Karaoke
 {
     internal const string Key = "dalemod.karaoke";
     internal const string StartedAction = "Played", SangAction = "Sang", KaraokeObj = "Karaoke";
     const string SongName = "Lady Gaga - Poker Face", SongFile = "karaoke/pokerface.wav", CoverFile = "karaoke/thefame.jpg";
     const float Needed = 15f, Poll = 0.25f, StopUp = -89.1f;
+
+    static bool? available;
+    internal static bool Available => available ??= LogAvailability(System.IO.File.Exists(System.IO.Path.Combine(ModAssets.Dir, SongFile)));
+    static bool LogAvailability(bool ok)
+    {
+        Plugin.L.LogInfo(ok ? "[KARAOKE] pack musique présent" : "[KARAOKE] pack musique absent : pas de karaoké");
+        return ok;
+    }
 
     static bool TaskActive() => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), Key);
 
@@ -44,6 +54,7 @@ static class Karaoke
     // Ajoutée une seule fois, à la fin de la liste : même rang chez tous les joueurs (même mod)
     static void EnsureSong()
     {
+        if (!Available) return;
         var stereo = StereoController.instance ?? Object.FindObjectOfType<StereoController>();
         var songs = stereo?.songs;
         if (songs == null) return;
@@ -118,7 +129,7 @@ static class Karaoke
 
     internal static void Tick()
     {
-        if (gagaIndex < 0) EnsureSong();   // filet de sécurité (chaîne créée sans passer par BeforeAwake)
+        if (gagaIndex < 0 && Available) EnsureSong();   // filet de sécurité (chaîne créée sans passer par BeforeAwake)
         CheckCd();
         var tp = CustomTaskPatches.ActiveTask()?.Pointer ?? IntPtr.Zero;
         if (tp != taskPtr) { taskPtr = tp; started = done = false; progress = 0f; }

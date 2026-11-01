@@ -1,4 +1,4 @@
-# Package ZoomerMod pour les amis : BepInEx + le mod en Release (sans menu F7), prêt à dézipper dans le dossier du jeu.
+﻿# Package ZoomerMod pour les amis : BepInEx + le mod en Release (sans menu F7), prêt à dézipper dans le dossier du jeu.
 # Usage : powershell -ExecutionPolicy Bypass -File tools\package.ps1
 # Résultat : dist\ZoomerMod-<version>.zip
 $ErrorActionPreference = "Stop"
@@ -46,8 +46,9 @@ Set-Content (Join-Path $bep "config\BepInEx.cfg") $cfg -Encoding utf8
 # Le mod
 Copy-Item $dll (Join-Path $bep "plugins\DaleMod")
 # Assets, sous-dossiers compris (ex. Assets\popups\ pour les bannières), sans les .mp3 d'origine
+# ni le karaoké (chanson sous droits d'auteur : pack à part, à dézipper par-dessus ; sans lui la tâche ne sort pas)
 $assets = Join-Path $mod "Assets"
-Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" } | ForEach-Object {
+Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" -and $_.FullName.Substring($assets.Length + 1) -notlike "karaoke\*" } | ForEach-Object {
     $dest = Join-Path (Join-Path $bep "plugins\DaleMod\Assets") $_.FullName.Substring($assets.Length + 1)
     New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
     Copy-Item $_.FullName $dest

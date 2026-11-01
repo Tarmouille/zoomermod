@@ -88,6 +88,7 @@ static class TaskPools
         for (int i = 0; i < list.Count; i++)
         {
             if (!managerPresent && CustomTaskPatches.CustomAt(i, list.Count)?.RequiresManager == true) continue;   // ex. "1 to 1"
+            if (!Karaoke.Available && CustomTaskPatches.CustomAt(i, list.Count)?.Key == Karaoke.Key) continue;   // pack musique absent
             var roles = list[i].Item2;
             if (roles == null || roles.Count == 0) continue;
             var c = roles[0];
