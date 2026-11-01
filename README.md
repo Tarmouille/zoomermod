@@ -1,4 +1,6 @@
-# ZoomerMod
+<p align="center"><img src="DaleMod/Assets/zoomer_nobg.png" alt="ZoomerMod" width="200"></p>
+
+<h1 align="center">ZoomerMod</h1>
 
 Mod fan-made pour **Dale & Dawson Stationery Supplies** : nouvelles tâches, rôles et effets, à jouer entre amis.
 
