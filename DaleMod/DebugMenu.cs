@@ -161,6 +161,9 @@ public class DebugMenu : MonoBehaviour
         GUI.Box(new Rect(x - 10, y - 10, w + 20, 820), "DaleMod — debug (F7)");
         y += 20;
 
+        // Avant la partie aussi (dans le lobby) : réglage lu par l'hôte au tirage du Jester
+        Jester.AnyPlayerCount = GUI.Toggle(new Rect(x, y, 520, 22), Jester.AnyPlayerCount, " Jester même à moins de 5 joueurs (à cocher avant de lancer la partie)");
+        y += 26;
         var tc = LocalTC;
         if (tc == null) { GUI.Label(new Rect(x, y, w, 22), "Pas de partie en cours (TaskController local introuvable)"); return; }
 
@@ -228,8 +231,6 @@ public class DebugMenu : MonoBehaviour
         y += 34;
 
         // --- Partie ---
-        Jester.AnyPlayerCount = GUI.Toggle(new Rect(x, y, 520, 22), Jester.AnyPlayerCount, " Jester même à moins de 5 joueurs (à cocher avant de lancer la partie)");
-        y += 26;
         BlockGameEnd = GUI.Toggle(new Rect(x, y, 260, 22), BlockGameEnd, " Bloquer la fin de partie");
         if (GUI.Button(new Rect(x + 270, y, 140, 24), "Lancer un meeting")) Run(() => { GameManager.instance.ServerCallMeeting(); return "Meeting lancé"; });
         // Licenciement du joueur choisi ("Pour :"), comme depuis le tableau blanc (test du Jester : se virer soi-même)
