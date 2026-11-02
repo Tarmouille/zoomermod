@@ -9,7 +9,7 @@ namespace DaleMod;
 [BepInPlugin("dalemod", "DaleMod", Version)]
 public class Plugin : BasePlugin
 {
-    internal const string Name = "ZoomerMod", Version = "0.7.0";   // affichés sur le menu principal (DebugMenu.DrawBadge)
+    internal const string Name = "ZoomerMod", Version = "0.8.0-dev";   // affichés sur le menu principal (DebugMenu.DrawBadge)
     internal static ManualLogSource L;
 
     public override void Load()
