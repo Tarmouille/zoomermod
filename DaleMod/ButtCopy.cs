@@ -133,18 +133,20 @@ static class ButtCopy
         Teleport(pc, seat);
         pc.transform.rotation = facing;
         releaseAt = Time.time + SitSeconds + 0.3f;
+        SetSeated(pc, true);
         if (NetworkServer.active) { NetSignal.Send(NetSignal.PlayerInteractableOf(NetworkClient.localPlayer), SeatOn); NetSignal.Send(printer, CopySound); }
         else NetSignal.SendToServer(printer, SitUp);
         Plugin.L.LogInfo("[BUTT] assis sur la photocopieuse");
     }
 
-    // --- Animation assise (chez chaque client, pour le joueur concerné) : celle de l'état "dans une chaise" du jeu ---
+    // --- Animation assise forcée (chez chaque client, pour le joueur concerné) : filet de sécurité si l'état InChair
+// (SetSeated) n'arrive pas chez les autres ---
     static readonly System.Collections.Generic.Dictionary<IntPtr, (Animator anim, string sit, string idle, float until)> seated = new();
 
     static void StartSeatAnim(PlayerController pc)
     {
         if (pc == null) return;
-        var anim = pc.GetComponentInChildren<Animator>(true);
+        var anim = pc.animator ?? pc.GetComponentInChildren<Animator>(true);
         string sit = AnimName(pc, Player.StateMachineLogic.States.InChair), idle = AnimName(pc, Player.StateMachineLogic.States.Idle);
         Plugin.L.LogInfo($"[BUTT] animation assise '{sit}' (repos '{idle}') animator={(anim == null ? "-" : "ok")}");
         if (anim == null || string.IsNullOrEmpty(sit)) return;
@@ -196,6 +198,7 @@ static class ButtCopy
         if (Time.time >= releaseAt)
         {
             releaseAt = -1f;
+            SetSeated(pc, false);
             pc.moveSpeed = savedMove; pc.sprintSpeed = savedSprint;
             if (pc.cameraController != null) pc.cameraController.cameraSensitivity = savedSens;
             if (viewCam != null) viewCam.localRotation = savedViewLocal;   // la vue suit de nouveau le corps (tourné vers l'avant)
@@ -206,7 +209,29 @@ static class ButtCopy
         if (pc.cameraController != null) { pc.cameraController.cameraSensitivity = 0f; pc.cameraController.lookInput = Vector2.zero; }
         if ((pc.transform.position - seat).sqrMagnitude > 0.0025f) Teleport(pc, seat);
         pc.transform.rotation = facing;
+        if (pc.targetState != InChair) SetSeated(pc, true);   // le jeu a pu repasser à un autre état
     }
+
+    // État "assis dans une chaise" du jeu (targetState, synchronisé chez tous) : vraie pose assise, vue par tout le monde.
+    // L'état veut normalement une chaise : on l'empêche d'en sortir tout seul, et de chercher une chaise absente.
+    const int InChair = (int)Player.StateMachineLogic.States.InChair, Idle = (int)Player.StateMachineLogic.States.Idle;
+
+    static void SetSeated(PlayerController pc, bool on)
+    {
+        try { pc.SetState(on ? InChair : Idle); Plugin.L.LogInfo($"[BUTT] état {(on ? "assis" : "debout")} : cible {pc.targetState}, actuel {pc.currentState}"); }
+        catch (Exception e) { Plugin.L.LogError("[BUTT] état assis : " + e.Message); }
+    }
+
+    static bool LocalSeated(PlayerController pc) =>
+        releaseAt > 0f && pc != null && NetworkClient.localPlayer != null && pc.netIdentity == NetworkClient.localPlayer;
+
+    [HarmonyLib.HarmonyPatch(typeof(Player.StateMachineLogic.InChairState), nameof(Player.StateMachineLogic.InChairState.CheckForNextState))]
+    [HarmonyLib.HarmonyPrefix]
+    static bool KeepSeated(Player.StateMachineLogic.InChairState __instance) => !LocalSeated(__instance._playerController);
+
+    [HarmonyLib.HarmonyPatch(typeof(PlayerController), nameof(PlayerController.MoveToChair))]
+    [HarmonyLib.HarmonyPrefix]
+    static bool NoChair(PlayerController __instance) => __instance.currentChair != null;
 
     // Avant de la machine : parmi ses 4 côtés (axes de l'objet), celui qui a le plus d'espace libre (le dos est contre le
     // mur). À égalité (machine au milieu de la pièce), le côté le plus proche du joueur.
