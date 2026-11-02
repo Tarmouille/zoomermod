@@ -61,8 +61,14 @@ static class Jester
 
     static void ServerTick(GameManager gm)
     {
-        if (gm.IsState(GameStates.WaitingForPlayerConnections) || gm.IsState(GameStates.StartGame)) { if (drawn || jesterId != 0) ResetServer(); return; }
-        if (gm.IsState(GameStates.InGame) && !drawn) { drawn = true; if (jesterId == 0) Draw(gm); }
+        if (gm.IsState(GameStates.WaitingForPlayerConnections)) { if (drawn || jesterId != 0 || revealed) ResetServer(); return; }
+        // Tirage dès que le jeu a distribué les rôles (début de partie), pour que la carte de rôle du Jester s'affiche ;
+        // au plus tard au passage en jeu
+        if (!drawn && (gm.IsState(GameStates.InGame) || (gm.IsState(GameStates.StartGame) && RolesAssigned())))
+        {
+            drawn = true;
+            if (jesterId == 0) Draw(gm);
+        }
         if (gm.IsState(GameStates.GameFinished) && !revealed)
         {
             revealed = true;
@@ -72,6 +78,18 @@ static class Jester
             if (pi != null) NetSignal.Send(pi, serverWon ? RevealWon : RevealLost);
             Plugin.L.LogInfo($"[JESTER] fin de partie : Jester {(serverWon ? "gagnant" : "perdant")}");
         }
+    }
+
+    static bool RolesAssigned()
+    {
+        bool any = false;
+        foreach (var lp in Object.FindObjectsOfType<LobbyPlayer>())
+        {
+            if (lp == null) continue;
+            if (lp.playerRole == PlayerRole.None) return false;
+            any = true;
+        }
+        return any;
     }
 
     static void Draw(GameManager gm)
@@ -168,11 +186,45 @@ static class Jester
     {
         bool first = !mine || status != Status.Playing;
         mine = true; status = Status.Playing; turnsLeft = turns;
+        foreach (var tab in Object.FindObjectsOfType<ShowRoleTab>()) ApplyRoleTab(tab);
         if (first)
             Hud.Show(T($"Tu es le JESTER ! Fais-toi virer par le manager en {turns} licenciement(s) maximum. Reste discret… (F1 : aide)",
                        $"You are the JESTER! Get fired by the manager within {turns} firing(s). Stay subtle… (F1: help)"), 8f);
         else
             Hud.Show(T($"Jester : encore {turns} licenciement(s) pour te faire virer.", $"Jester: {turns} firing(s) left to get fired."), 4f);
+    }
+
+    // Carte de rôle du jeu (début de partie, ou ouverte plus tard) : version Jester, en rose
+    [HarmonyPatch(typeof(ShowRoleTab), nameof(ShowRoleTab.UpdateTab))]
+    [HarmonyPostfix]
+    static void AfterRoleTab(ShowRoleTab __instance) => ApplyRoleTab(__instance);
+
+    static bool roleColorsLogged;
+    static void ApplyRoleTab(ShowRoleTab t)
+    {
+        if (t == null || !mine) return;
+        try
+        {
+            if (!roleColorsLogged)
+            {
+                roleColorsLogged = true;
+                Plugin.L.LogInfo($"[JESTER] carte de rôle : barres {t.cardTopBar?.color} / {t.cardBottomBar?.color}, fond {t.backgroundImage?.color}");
+            }
+            if (t.roleText != null) t.roleText.text = status == Status.Won ? T("Jester (gagné !)", "Jester (won!)") : T("Vous êtes le Jester !", "You are the Jester!");
+            if (t.roleDescriptionText != null)
+                t.roleDescriptionText.text = status switch
+                {
+                    Status.Won => T("Tu t'es fait virer : tu as gagné ! Tu continues en Janitor, garde le secret jusqu'à la fin.",
+                                    "You got fired: you won! You carry on as a Janitor, keep it secret until the end."),
+                    Status.Failed => T("Raté : plus de licenciements. Tu es maintenant un simple spécialiste.",
+                                       "Missed: no firings left. You're now a plain specialist."),
+                    _ => T($"Rôle caché : pour tout le monde, tu es un spécialiste. Ton but : te faire virer par le manager en {turnsLeft} licenciement(s) maximum. Maintiens F1 pour l'aide.",
+                           $"Hidden role: to everyone you are a specialist. Your goal: get fired by the manager within {turnsLeft} firing(s). Hold F1 for help."),
+                };
+            if (t.cardTopBar != null) t.cardTopBar.color = Pink;
+            if (t.cardBottomBar != null) t.cardBottomBar.color = Pink;
+        }
+        catch (Exception e) { Plugin.L.LogError("[JESTER] carte de rôle : " + e); }
     }
 
     static void ResetClient() { mine = false; turnsLeft = 0; status = Status.Playing; revealName = null; }
@@ -251,7 +303,7 @@ static class Jester
         var gm = GameManager.instance;
         if (gm == null) { ResetServer(); ResetClient(); HideUi(); return; }
         if (NetworkServer.active) ServerTick(gm);
-        if (gm.IsState(GameStates.WaitingForPlayerConnections) || gm.IsState(GameStates.StartGame)) { ResetClient(); HideUi(); return; }
+        if (gm.IsState(GameStates.WaitingForPlayerConnections)) { ResetClient(); HideUi(); return; }
         UpdateHelp();
         UpdateHint();
     }
