@@ -98,14 +98,25 @@ static class Jester
         if (!SettingEnabled()) { Plugin.L.LogInfo("[JESTER] désactivé dans les réglages du lobby"); return; }
         var players = Object.FindObjectsOfType<LobbyPlayer>();
         int count = 0;
-        var candidates = new System.Collections.Generic.List<LobbyPlayer>();
+        // Spécialistes sans sous-rôle de préférence ; sinon n'importe quel spécialiste (HR Rep, Analyst… : le Jester est
+        // caché, il peut cumuler)
+        var plain = new System.Collections.Generic.List<LobbyPlayer>();
+        var any = new System.Collections.Generic.List<LobbyPlayer>();
         foreach (var lp in players)
         {
             if (lp == null || lp.playerRole == PlayerRole.None) continue;
             count++;
-            if (lp.playerRole == PlayerRole.Specialist && lp.subRole == SubRole.None && !lp.isFired) candidates.Add(lp);
+            if (lp.playerRole != PlayerRole.Specialist || lp.isFired) continue;
+            any.Add(lp);
+            if (lp.subRole == SubRole.None) plain.Add(lp);
         }
-        if ((count < MinPlayers && !AnyPlayerCount) || candidates.Count == 0) { Plugin.L.LogInfo($"[JESTER] pas de Jester ({count} joueurs)"); return; }
+        var candidates = plain.Count > 0 ? plain : any;
+        if (count < MinPlayers && !AnyPlayerCount)
+        {
+            Plugin.L.LogInfo($"[JESTER] pas de Jester : {count} joueurs (minimum {MinPlayers}, option F7 « moins de 5 joueurs » décochée)");
+            return;
+        }
+        if (candidates.Count == 0) { Plugin.L.LogInfo($"[JESTER] pas de Jester : aucun spécialiste ({count} joueurs)"); return; }
         Make(candidates[new System.Random().Next(candidates.Count)], gm);
     }
 
