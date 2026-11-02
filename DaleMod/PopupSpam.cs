@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using Computer.Scripts.System;
@@ -267,7 +268,8 @@ static class PopupSpam
         banners = new List<Sprite>();
         var dir = Path.Combine(ModAssets.Dir, "popups");
         if (!Directory.Exists(dir)) return;
-        var files = Directory.GetFiles(dir, "*.png");
+        var files = Directory.GetFiles(dir).Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+            || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)).ToArray();
         Array.Sort(files, StringComparer.OrdinalIgnoreCase);   // même ordre chez tous (même tirage)
         foreach (var f in files)
             try
