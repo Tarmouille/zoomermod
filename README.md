@@ -112,9 +112,8 @@ Le chemin du jeu est dans `DaleMod/DaleMod.csproj` (`GameDir`) et `tools/package
 Les médias sous droits d'auteur ne sont pas dans le dépôt : la vidéo et certains sons sont dans le zip de release
 (`BepInEx/plugins/DaleMod/Assets/`), à poser dans `DaleMod/Assets/`.
 
-La musique du karaoké est dans le zip de release (`BepInEx/plugins/DaleMod/Assets/karaoke/rise.wav`), pas dans le dépôt.
-Les bannières de pub ne sont ni dans le dépôt ni dans le zip : c'est un pack média à part (`Assets/popups/`). Sans elles,
-les pubs sont en texte.
+La musique du karaoké (`Assets/karaoke/rise.wav`) et les bannières de pub (`Assets/popups/`) sont aussi dans le zip de
+release, pas dans le dépôt. Sans bannières, les pubs sont en texte.
 
 ## Crédits
 

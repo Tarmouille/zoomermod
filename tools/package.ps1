@@ -45,12 +45,9 @@ Set-Content (Join-Path $bep "config\BepInEx.cfg") $cfg -Encoding utf8
 
 # Le mod
 Copy-Item $dll (Join-Path $bep "plugins\DaleMod")
-# Assets, sous-dossiers compris, sans les .mp3 d'origine ni les médias du pack à part (zip média, plus bas) :
-# bannières de pub (images perso ; sans elles : pubs texte)
+# Assets, sous-dossiers compris (karaoke\, popups\…), sans les .mp3 d'origine
 $assets = Join-Path $mod "Assets"
-$mediaDirs = @("popups\*")
-function Test-Media($rel) { foreach ($m in $mediaDirs) { if ($rel -like $m) { return $true } }; return $false }
-Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" -and -not (Test-Media $_.FullName.Substring($assets.Length + 1)) } | ForEach-Object {
+Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" } | ForEach-Object {
     $dest = Join-Path (Join-Path $bep "plugins\DaleMod\Assets") $_.FullName.Substring($assets.Length + 1)
     New-Item -ItemType Directory -Force (Split-Path $dest) | Out-Null
     Copy-Item $_.FullName $dest
@@ -125,17 +122,3 @@ $z = [IO.Compression.ZipFile]::OpenRead($zip); $entries = $z.Entries.FullName; $
 if (-not ($entries -contains ".doorstop_version")) { Write-Warning ".doorstop_version absent du zip" }
 Remove-Item $stage -Recurse -Force
 "{0} ({1:N1} Mo, {2} fichiers)" -f $zip, ((Get-Item $zip).Length / 1MB), $entries.Count
-
-# 4. Zip média (à partager en privé, à dézipper par-dessus dans le dossier du jeu) : bannières
-$media = Join-Path $root "dist\ZoomerMod-media-$version.zip"
-if (Test-Path $media) { Remove-Item $media -Force }
-$archive = [IO.Compression.ZipFile]::Open($media, "Create")
-$n = 0
-try {
-    Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" -and (Test-Media $_.FullName.Substring($assets.Length + 1)) } | ForEach-Object {
-        $name = "BepInEx/plugins/DaleMod/Assets/" + $_.FullName.Substring($assets.Length + 1).Replace('\', '/')
-        [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $_.FullName, $name, "Optimal")
-        $n++
-    }
-} finally { $archive.Dispose() }
-"{0} ({1:N1} Mo, {2} fichiers)" -f $media, ((Get-Item $media).Length / 1MB), $n
