@@ -70,6 +70,18 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 | Attention Mr. Zoomer | Saboter le broyeur : le prochain qui broie un document y laisse sa main (jusqu'à 60 s) |
 | Agrafeuse piégée | Piéger l'agrafeuse d'un poste : le prochain qui s'y assoit ou touche la gelée se fait agrafer le doigt |
 
+## Rôle caché : le Jester
+
+Au début de la partie, un spécialiste devient **en secret** le Jester (à partir de 5 joueurs ; réglage « Jester (ZoomerMod) »
+dans l'onglet Rôles des réglages du lobby). Personne ne le sait, ni le manager, ni l'hôte.
+
+- **Son but** : se faire **virer par le manager**. Pour tout le monde, c'est un spécialiste (tâches bleues et rouges).
+- **Ses tours** : la moitié (arrondie au supérieur) des licenciements possibles. Chaque licenciement d'un autre joueur lui
+  en coûte un. Plus de tours : il redevient un simple spécialiste.
+- **Viré à temps** : écran de renvoi d'un spécialiste, puis il continue la partie en Janitor. À la fin, **il est le seul
+  gagnant** (écran de fin rose avec son nom). Sinon, son rôle est révélé à la fin.
+- Carte de rôle rose au début de la partie ; **maintenir F1** affiche ses règles et ses licenciements restants.
+
 ## Effets et événements
 
 - **Nauséeux** : écran vert et tangage. Vient du caca, des cafés à l'encre, ou des aliments périmés gardés trop longtemps en main.
