@@ -306,9 +306,20 @@ static class Jester
         return string.IsNullOrEmpty(name) ? null : name;
     }
 
+    // Finalizer (et pas Postfix) : s'applique même si l'écran de résultat du jeu lève une exception en route
     [HarmonyPatch(typeof(ResultTab), nameof(ResultTab.SetResult))]
-    [HarmonyPostfix]
+    [HarmonyFinalizer]
     static void AfterSetResult() => ApplyResult();
+
+    // Statistiques de fin du jeu : plante chez certains invités (joueur absent de son dictionnaire, sans doute après le
+    // changement de rôle du Jester) et interrompt l'écran de résultat. On neutralise l'erreur : stats non enregistrées.
+    [HarmonyPatch(typeof(Stats.LobbyStatisticsManager), nameof(Stats.LobbyStatisticsManager.SaveToGameStats))]
+    [HarmonyFinalizer]
+    static Exception StatsSafe(Exception __exception)
+    {
+        if (__exception != null) Plugin.L.LogWarning("[JESTER] statistiques de fin non enregistrées : " + __exception.GetType().Name);
+        return null;
+    }
 
     static void ApplyResult()
     {
