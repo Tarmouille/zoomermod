@@ -128,7 +128,7 @@ static class Jester
     // Licenciement : le Jester viré à temps devient Janitor au lieu de partir ; tout autre licenciement consomme un tour
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.ServerFirePlayer))]
     [HarmonyPrefix]
-    static bool BeforeFire(NetworkIdentity player, bool onlyDemoteOrFire, out bool __state)
+    static bool BeforeFire(GameManager __instance, NetworkIdentity player, bool onlyDemoteOrFire, out bool __state)
     {
         __state = false;
         var lp = LobbyOf(player);
@@ -143,6 +143,10 @@ static class Jester
             lp.ServerSetPlayerRole(PlayerRole.Janitor);
         }
         catch (Exception e) { Plugin.L.LogError("[JESTER] renvoi : " + e); }
+        // Ce que le vrai renvoi fait aussi (on l'a sauté) : comptes des équipes, fin de la réunion
+        try { __instance.latestFiredPlayer = lp; __instance.UpdateRolesLeft(); } catch (Exception e) { Plugin.L.LogWarning("[JESTER] équipes : " + e.Message); }
+        try { if (__instance.IsState(GameStates.Meeting)) { __instance.ServerFinnishMeeting(); Plugin.L.LogInfo("[JESTER] réunion terminée"); } }
+        catch (Exception e) { Plugin.L.LogError("[JESTER] fin de réunion : " + e); }
         NetSignal.SendToPlayer(PlayerIdOf(lp), WonSignal);
         Plugin.L.LogInfo("[JESTER] le Jester s'est fait virer : gagné");
         return false;   // pas de vrai renvoi
