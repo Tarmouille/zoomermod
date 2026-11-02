@@ -230,6 +230,8 @@ public class DebugMenu : MonoBehaviour
         // --- Partie ---
         BlockGameEnd = GUI.Toggle(new Rect(x, y, 260, 22), BlockGameEnd, " Bloquer la fin de partie");
         if (GUI.Button(new Rect(x + 270, y, 140, 24), "Lancer un meeting")) Run(() => { GameManager.instance.ServerCallMeeting(); return "Meeting lancé"; });
+        // Licenciement du joueur choisi ("Pour :"), comme depuis le tableau blanc (test du Jester : se virer soi-même)
+        if (GUI.Button(new Rect(x + 420, y, 130, 24), "Virer")) Run(() => SetRole(tc, chosen, lp => GameManager.instance.ServerFirePlayer(lp.netIdentity, false, true), "Viré"));
         y += 30;
         if (GUI.Button(new Rect(x, y, 180, 24), "Panne générale")) Run(Incident.Start);
         if (GUI.Button(new Rect(x + 190, y, 180, 24), "Réparer la panne")) Run(Incident.Clear);
