@@ -133,6 +133,7 @@ static class ChainMail
             }
             else continue;
             if (w.sender != null) w.sender.text = pc.emailAddress;
+            if (w.receiver != null) w.receiver.text = "";   // destinataire vide à chaque nouveau mail
             if (w.subject != null) w.subject.text = subject;
             if (w.text != null) w.text.text = body;
             Plugin.L.LogInfo($"[CHAIN] fenêtre préremplie ({(spam ? "chaîne" : "transfert " + windows[w.Pointer])})");
@@ -185,6 +186,9 @@ static class ChainMail
         sentTo.Add(to.ToLowerInvariant());
         if (!chain) forwarded.Add(kind);
         windows.Remove(__instance.Pointer);
+        // Destinataire effacé, et fenêtre de nouveau "à préremplir" si le jeu la réutilise pour le mail suivant
+        if (__instance.receiver != null) __instance.receiver.text = "";
+        seen.Remove(__instance.Pointer);
 
         int needed = chain ? ChainCount : WorkMails.Length;
         Validate(chain);
