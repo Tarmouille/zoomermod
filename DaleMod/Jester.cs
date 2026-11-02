@@ -171,6 +171,10 @@ static class Jester
         try { if (__instance.IsState(GameStates.Meeting)) { __instance.ServerFinnishMeeting(); Plugin.L.LogInfo("[JESTER] réunion terminée"); } }
         catch (Exception e) { Plugin.L.LogError("[JESTER] fin de réunion : " + e); }
         NetSignal.SendToPlayer(PlayerIdOf(lp), WonSignal);
+        // Prévient déjà tout le monde (rien ne s'affiche avant l'écran de fin) : l'envoi de la fin de partie arrive
+        // parfois trop tard chez les invités
+        var pi = NetSignal.PlayerInteractableOf(PlayerIdOf(lp));
+        if (pi != null) NetSignal.Send(pi, RevealWon);
         Plugin.L.LogInfo("[JESTER] le Jester s'est fait virer : gagné");
         return false;   // pas de vrai renvoi
     }
@@ -282,9 +286,9 @@ static class Jester
 
     static void Reveal(Props.Scripts.Interactable it, bool won)
     {
-        revealName = NameOf(it) ?? "?";
+        revealName = NameOf(it) ?? revealName ?? "?";   // garde le nom déjà connu si le joueur a disparu entre-temps
         revealWon = won;
-        Plugin.L.LogInfo($"[JESTER] révélation reçue (Jester {(won ? "gagnant" : "perdant")}), écran de fin {(ResultTab.instance == null ? "pas encore ouvert" : "ouvert")}");
+        Plugin.L.LogInfo($"[JESTER] révélation reçue, écran de fin {(ResultTab.instance == null ? "pas encore ouvert" : "ouvert")}");
         ApplyResult();
     }
 
