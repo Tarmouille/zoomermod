@@ -46,9 +46,9 @@ Set-Content (Join-Path $bep "config\BepInEx.cfg") $cfg -Encoding utf8
 # Le mod
 Copy-Item $dll (Join-Path $bep "plugins\DaleMod")
 # Assets, sous-dossiers compris, sans les .mp3 d'origine ni les médias du pack à part (zip média, plus bas) :
-# karaoké (chanson sous droits d'auteur ; sans lui la tâche ne sort pas) et bannières de pub (sans elles : pubs texte)
+# bannières de pub (images perso ; sans elles : pubs texte)
 $assets = Join-Path $mod "Assets"
-$mediaDirs = "karaoke\*", "popups\*"
+$mediaDirs = @("popups\*")
 function Test-Media($rel) { foreach ($m in $mediaDirs) { if ($rel -like $m) { return $true } }; return $false }
 Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" -and -not (Test-Media $_.FullName.Substring($assets.Length + 1)) } | ForEach-Object {
     $dest = Join-Path (Join-Path $bep "plugins\DaleMod\Assets") $_.FullName.Substring($assets.Length + 1)
@@ -105,7 +105,8 @@ DÉSINSTALLER
 Supprime winhttp.dll du dossier du jeu (le jeu redevient normal). Pour tout enlever : supprime aussi
 doorstop_config.ini, .doorstop_version, les deux fichiers "ZoomerMod ON/OFF.bat", et les dossiers BepInEx et dotnet.
 
-Crédits : sniff.wav par spookymodem (CC-BY 3.0), voir BepInEx\plugins\DaleMod\Assets\CREDITS.txt
+Crédits : musique du karaoké "Rise of the Machines", Music by Karl Casey @ White Bat Audio ;
+sniff.wav par spookymodem (CC-BY 3.0). Voir BepInEx\plugins\DaleMod\Assets\CREDITS.txt
 "@ | Set-Content (Join-Path $stage "LISEZ-MOI.txt") -Encoding utf8
 
 # 3. Zip
@@ -125,7 +126,7 @@ if (-not ($entries -contains ".doorstop_version")) { Write-Warning ".doorstop_ve
 Remove-Item $stage -Recurse -Force
 "{0} ({1:N1} Mo, {2} fichiers)" -f $zip, ((Get-Item $zip).Length / 1MB), $entries.Count
 
-# 4. Zip média (à partager en privé, à dézipper par-dessus dans le dossier du jeu) : karaoké + bannières, sans les .mp3
+# 4. Zip média (à partager en privé, à dézipper par-dessus dans le dossier du jeu) : bannières
 $media = Join-Path $root "dist\ZoomerMod-media-$version.zip"
 if (Test-Path $media) { Remove-Item $media -Force }
 $archive = [IO.Compression.ZipFile]::Open($media, "Create")

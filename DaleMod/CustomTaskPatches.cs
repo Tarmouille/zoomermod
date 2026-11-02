@@ -402,13 +402,13 @@ static class CustomTaskPatches
         },
         new CustomTask
         {
-            // Salle de pause : CD de Lady Gaga dans la chaîne, puis 15 s de chant sans que le manager entre (Karaoke.cs)
+            // Salle de pause : CD de Karl Casey dans la chaîne, puis 15 s de chant sans que le manager entre (Karaoke.cs)
             Carrier = typeof(LightPumpkinTask), Key = Karaoke.Key, Role = PlayerRole.Slacker,
-            TitleFr = "Karaoké : Poker Face", TitleEn = "Karaoke: Poker Face",
-            DescFr = "Can't read my, can't read my… poker face", DescEn = "Can't read my, can't read my… poker face",
+            TitleFr = "Karaoké : Rise of the Machines", TitleEn = "Karaoke: Rise of the Machines",
+            DescFr = "Les machines se lèvent, la salle de pause aussi", DescEn = "The machines rise, and so does the break room",
             Steps = new[]
             {
-                (Karaoke.StartedAction, Karaoke.KaraokeObj, "Mettre le CD de Lady Gaga (The Fame) dans la chaîne de la salle de pause", "Put the Lady Gaga CD (The Fame) in the break room stereo"),
+                (Karaoke.StartedAction, Karaoke.KaraokeObj, "Mettre le CD Rise of the Machines dans la chaîne de la salle de pause", "Put the Rise of the Machines CD in the break room stereo"),
                 (Karaoke.SangAction, Karaoke.KaraokeObj, "Chanter 15 s dans la salle de pause sans que le manager débarque", "Sing for 15 s in the break room without the manager walking in"),
             },
         },

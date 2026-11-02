@@ -59,7 +59,7 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 | Power Nap | Dormir 20 s à son poste sans que le manager passe à côté (on entend le ronflement) |
 | Spam RH | Envoyer une chaîne de mails à 5 collègues |
 | Photocopie de fesses | S'asseoir sur la photocopieuse, récupérer la copie, la punaiser |
-| Karaoké : Poker Face | Mettre le CD de Lady Gaga en salle de pause et chanter 15 s sans que le manager débarque (pack musique requis) |
+| Karaoké : Rise of the Machines | Mettre le CD en salle de pause et chanter 15 s sans que le manager débarque |
 
 ### Noires (sabotages)
 
@@ -112,10 +112,12 @@ Le chemin du jeu est dans `DaleMod/DaleMod.csproj` (`GameDir`) et `tools/package
 Les médias sous droits d'auteur ne sont pas dans le dépôt : la vidéo et certains sons sont dans le zip de release
 (`BepInEx/plugins/DaleMod/Assets/`), à poser dans `DaleMod/Assets/`.
 
-La musique du karaoké et les bannières de pub ne sont ni dans le dépôt ni dans le zip : c'est un pack média à part
-(`Assets/karaoke/`, `Assets/popups/`, zip `dist/ZoomerMod-media-<version>.zip` produit par `package.ps1`). Sans lui, la
-tâche Karaoké ne sort jamais et les pubs sont en texte. Dans une partie, tout le monde doit avoir le pack, ou personne.
+La musique du karaoké est dans le zip de release (`BepInEx/plugins/DaleMod/Assets/karaoke/rise.wav`), pas dans le dépôt.
+Les bannières de pub ne sont ni dans le dépôt ni dans le zip : c'est un pack média à part (`Assets/popups/`). Sans elles,
+les pubs sont en texte.
 
 ## Crédits
+
+Musique du karaoké : *Rise of the Machines*, Music by Karl Casey @ White Bat Audio.
 
 Voir [`DaleMod/Assets/CREDITS.txt`](DaleMod/Assets/CREDITS.txt). Mod non officiel, sans lien avec les développeurs du jeu.

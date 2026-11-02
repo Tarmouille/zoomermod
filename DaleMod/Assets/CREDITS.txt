@@ -2,3 +2,6 @@ sniff.wav : "Sniffing" par spookymodem, CC-BY 3.0
   https://opengameart.org/content/sniffing
 cokebag.obj : généré par tools/make_bag.py (DaleMod)
 cookiemonster.wav : fourni par l'utilisateur (converti depuis cookiemonster.mp3)
+karaoke/rise.wav : "Rise of the Machines", Music by Karl Casey @ White Bat Audio
+  https://karlcasey.bandcamp.com/track/rise-of-the-machines (libre pour les jeux, avec ce crédit)
+karaoke/rise.png : pochette dessinée par tools/make_karaoke_cover.py (DaleMod)
