@@ -48,7 +48,7 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 | Tâche | Ce qu'il faut faire |
 |---|---|
 | Rail de bureau | Prendre le sachet à son bureau et aller le sniffer aux toilettes |
-| Recyclage | Manger son caca aux toilettes (effet Nauséeux garanti) |
+| Recyclage | Manger du caca aux toilettes (effet Nauséeux garanti) |
 | Lettre au boss | Insulter le manager par mail, depuis le PC (et l'adresse) d'un collègue |
 | Tupperware 2.0 : ni vu ni connu | Manger la bolo et remettre le tupperware sale au frigo |
 | Rafraîchissement d'équipe | Asperger un collègue à l'extincteur |
@@ -80,7 +80,7 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 - **PC en court-circuit** : étincelles, fumée et écran d'erreur jusqu'à ce que quelqu'un le sèche.
 - **Douche** : voile d'eau puis gouttes sur l'écran de la victime, et pas mouillés pendant 15 s.
 - **Extincteur** : nuage blanc sur l'écran des aspergés.
-- **Caca** : éclaboussures marron autour des toilettes et en bas de l'écran du mangeur.
+- **Caca** : éclaboussures marron en continu autour des toilettes et en bas de l'écran du mangeur.
 - **Tract FO** : il apparaît de temps en temps au hasard sur le bureau d'un PC.
 
 ## Ce que fait (et ne fait pas) le mod

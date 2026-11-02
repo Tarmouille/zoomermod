@@ -11,9 +11,9 @@ using UnityEngine.Events;
 
 namespace DaleMod;
 
-// Tâche "Recyclage" : "Manger son caca" aux toilettes (5 s) -> effet "Nauséeux".
-// Le son de dégustation est diffusé à tous les joueurs par NetSignal, avec des giclées marron autour des toilettes ;
-// le mangeur reçoit en plus des éclaboussures en bas de son écran (ScreenSplat).
+// Tâche "Recyclage" : "Manger du caca" aux toilettes (5 s) -> effet "Nauséeux".
+// Le son de dégustation est diffusé à tous les joueurs par NetSignal, avec des giclées marron autour des toilettes en continu
+// pendant les 5 s ; le mangeur reçoit en plus des éclaboussures en bas de son écran (ScreenSplat), elles aussi en continu.
 // L'action tourne sur le serveur (NetSignal.ServerAction) : effet appliqué au mangeur, étape validée chez lui seul.
 static class Caca
 {
@@ -35,7 +35,7 @@ static class Caca
         var alts = __instance.alternatives;
         if (alts == null) return;
         var toilet = __instance;
-        alts.Add(new InteractionAlternative(CustomTaskPatches.Text("Manger son caca", "Eat your poop"), InteractionPermission.All,
+        alts.Add(new InteractionAlternative(CustomTaskPatches.Text("Manger du caca", "Eat poop"), InteractionPermission.All,
             NetSignal.ServerAction(toilet, EatAction, player => Eat(player)),
             false,
             DelegateSupport.ConvertDelegate<Il2CppSystem.Func<bool>>(new Func<bool>(TaskActive)),
@@ -49,6 +49,8 @@ static class Caca
     static void StartEat(Toilet toilet)
     {
         Plugin.L.LogInfo($"[CACA] début de l'action (serveur={NetworkServer.active})");
+        screenUntil = Time.time + EatDuration;   // éclaboussures d'écran en continu chez le mangeur (Tick)
+        nextScreen = 0f;
         if (!NetworkServer.active) { NetSignal.SendToServer(toilet, StartAction); return; }   // client : le serveur lance le son
         NetSignal.Send(toilet, SoundSignal);
         soundSent = true;
@@ -62,14 +64,9 @@ static class Caca
         {
             if (eatClip == null) eatClip = ModAssets.LoadWav("cookiemonster.wav");
             ModAudio.Play(eatClip, it.transform.position);
-            // Giclées marron autour des toilettes (chez tous), effacées au bout de 30 s
-            try
-            {
-                var (top, floor) = Blood.Bounds(it);
-                var at = Vector3.Lerp(new Vector3(top.x, floor, top.z), top, 0.6f);
-                Blood.SplashAt(at, floor, 30, 2, Blood.Poop, 30f);
-            }
-            catch (Exception e) { Plugin.L.LogError("[CACA] taches : " + e); }
+            // Giclées marron autour des toilettes (chez tous), en continu pendant la dégustation, effacées au bout de 30 s
+            Splash(it, 30, 2);
+            splashing.Add((it.transform, Time.time + EatDuration));
             Plugin.L.LogInfo("[CACA] son joué");
         });
         // Chez chaque client : le joueur qui a la tâche et qui est à ces toilettes valide son étape
@@ -78,6 +75,42 @@ static class Caca
             if (TaskActive()) TaskHook.TriggerTaskHookCommandStatic(Hook(AteAction));
             ScreenSplat.Burst(Blood.Poop, 8);   // éclaboussures en bas de l'écran du mangeur
         });
+    }
+
+    static void Splash(Component toilet, int drops, int big)
+    {
+        try
+        {
+            var (top, floor) = Blood.Bounds(toilet);
+            var at = Vector3.Lerp(new Vector3(top.x, floor, top.z), top, 0.6f);
+            Blood.SplashAt(at, floor, drops, big, Blood.Poop, 30f);
+        }
+        catch (Exception e) { Plugin.L.LogError("[CACA] taches : " + e); }
+    }
+
+    // Giclées en cours (toilettes, fin) et éclaboussures d'écran du mangeur local
+    static readonly System.Collections.Generic.List<(Transform toilet, float until)> splashing = new();
+    static float nextSplash, screenUntil = -1f, nextScreen;
+    const float SplashEvery = 0.45f, ScreenEvery = 0.7f;
+
+    internal static void Tick()
+    {
+        if (splashing.Count > 0 && Time.time >= nextSplash)
+        {
+            nextSplash = Time.time + SplashEvery;
+            for (int i = splashing.Count - 1; i >= 0; i--)
+            {
+                var (t, until) = splashing[i];
+                if (t == null || Time.time >= until) { splashing.RemoveAt(i); continue; }
+                Splash(t, 10, UnityEngine.Random.value < 0.25f ? 1 : 0);
+            }
+        }
+        if (screenUntil > 0f && Time.time >= nextScreen)
+        {
+            if (Time.time >= screenUntil) { screenUntil = -1f; return; }
+            nextScreen = Time.time + ScreenEvery;
+            ScreenSplat.Burst(Blood.Poop, 2);
+        }
     }
 
     static void Eat(NetworkIdentity player)

@@ -64,7 +64,7 @@ static class CustomTaskPatches
             DescFr = "Rien ne se perd", DescEn = "Waste not, want not",
             Steps = new[]
             {
-                (Caca.AteAction,  Caca.ToiletObj, "Manger son caca",      "Eat your poop"),
+                (Caca.AteAction,  Caca.ToiletObj, "Manger du caca",       "Eat poop"),
             },
         },
         new CustomTask

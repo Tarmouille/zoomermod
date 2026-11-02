@@ -42,6 +42,7 @@ public class DebugMenu : MonoBehaviour
         try { Zoomer.Tick(); } catch (Exception ex) { Plugin.L.LogError("[ZOOMER] " + ex); }
         try { Blood.Tick(); } catch (Exception ex) { Plugin.L.LogError("[BLOOD] " + ex); }
         try { ScreenSplat.Tick(); } catch (Exception ex) { Plugin.L.LogError("[SPLAT] " + ex); }
+        try { Caca.Tick(); } catch (Exception ex) { Plugin.L.LogError("[CACA] " + ex); }
         try { Puffs.Tick(); } catch (Exception ex) { Plugin.L.LogError("[PUFF] " + ex); }
         try { Autograph.Tick(); } catch (Exception ex) { Plugin.L.LogError("[AUTOGRAPH] " + ex); }
         try { FridgeCleanup.Tick(); } catch (Exception ex) { Plugin.L.LogError("[FRIGO] " + ex); }
