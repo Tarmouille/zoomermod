@@ -94,6 +94,7 @@ static class Jester
 
     static void Draw(GameManager gm)
     {
+        if (!SettingEnabled()) { Plugin.L.LogInfo("[JESTER] désactivé dans les réglages du lobby"); return; }
         var players = Object.FindObjectsOfType<LobbyPlayer>();
         int count = 0;
         var candidates = new System.Collections.Generic.List<LobbyPlayer>();
@@ -264,42 +265,74 @@ static class Jester
         catch (Exception e) { Plugin.L.LogError("[JESTER] écran de fin : " + e); }
     }
 
-    // Diagnostic (une fois) : comment le jeu décrit les réglages du lobby, pour y ajouter l'interrupteur du Jester
-    static bool settingsDumped;
-    static void DumpSettings()
+    // ===================== Réglage du lobby "Jester : Désactivé / Activé" =====================
+    // Ajouté à la catégorie "Rôles" des réglages du lobby, sur le modèle de "Use Analyst" (mêmes choix Désactivé/Activé).
+    // Libellés : clés "dalemod.settings.jester.*", traduites par CustomTaskPatches.LocalizePatch (Localize ci-dessous).
+    const string SettingKey = "ZoomerMod Jester";
+    static float nextSettingCheck;
+
+    internal static string Localize(string key) => key switch
+    {
+        "dalemod.settings.jester.label" => T("Jester (ZoomerMod)", "Jester (ZoomerMod)"),
+        "dalemod.settings.jester.hint" => T("Si activé, un spécialiste devient en secret le Jester (à partir de 5 joueurs) : il gagne seul s'il se fait virer par le manager.",
+                                            "If enabled, a specialist secretly becomes the Jester (5+ players): they win alone if they get fired by the manager."),
+        "dalemod.settings.jester.sub" => "Jester",
+        _ => null,
+    };
+
+    static Setting FindSetting(string key)
     {
         var m = GameRulesSettingsManager.instance;
-        if (settingsDumped || m == null || m.categories == null || m.categories.Count == 0) return;
-        settingsDumped = true;
+        if (m?.categories == null) return null;
+        foreach (var c in m.categories)
+            if (c?.Settings != null)
+                foreach (var st in c.Settings) if (st != null && st.Key == key) return st;
+        return null;
+    }
+
+    static void EnsureSetting()
+    {
+        if (Time.unscaledTime < nextSettingCheck) return;
+        nextSettingCheck = Time.unscaledTime + 2f;
+        var m = GameRulesSettingsManager.instance;
+        if (m?.categories == null || FindSetting(SettingKey) != null) return;
         try
         {
-            foreach (var c in m.categories)
+            var model = FindSetting("Use Analyst");
+            SettingCategory roles = null;
+            foreach (var c in m.categories) if (c != null && c.CategoryName == "lobbySettings.roles.title") roles = c;
+            if (model == null || roles?.Settings == null) return;
+            var st = new Setting
             {
-                Plugin.L.LogInfo($"[SETTINGS] catégorie '{c.CategoryName}' dev={c.isDev} ({c.Settings?.Count ?? 0} réglages)");
-                if (c.Settings == null) continue;
-                foreach (var st in c.Settings)
-                {
-                    string alts = "";
-                    if (st.alternatives != null)
-                        foreach (var a in st.alternatives)
-                        {
-                            var props = new System.Collections.Generic.List<string>();
-                            foreach (var pr in a.GetType().GetProperties())
-                                if (pr.PropertyType == typeof(string) || pr.PropertyType.IsPrimitive)
-                                    try { props.Add($"{pr.Name}={pr.GetValue(a)}"); } catch { }
-                            alts += "{" + string.Join(" ", props) + "} ";
-                        }
-                    Plugin.L.LogInfo($"[SETTINGS]   key='{st.Key}' label='{st.label}' type={st.type} value={st.Value} sub='{st.subCategory}' dev={st.devOnly} alts={alts}");
-                }
-            }
+                Key = SettingKey,
+                label = "dalemod.settings.jester.label",
+                hint = "dalemod.settings.jester.hint",
+                subCategory = "dalemod.settings.jester.sub",
+                subCategoryColor = Pink,
+                type = model.type,
+                alternatives = model.alternatives,   // Désactivé / Activé
+                Value = 1f,
+                roundTo = model.roundTo,
+                additionalInfo = model.additionalInfo,
+                presetName = model.presetName,
+            };
+            roles.Settings.Add(st);
+            Plugin.L.LogInfo("[JESTER] réglage ajouté aux réglages du lobby (catégorie Rôles)");
         }
-        catch (Exception e) { Plugin.L.LogWarning("[SETTINGS] " + e.Message); }
+        catch (Exception e) { Plugin.L.LogWarning("[JESTER] réglage du lobby : " + e.Message); }
+    }
+
+    // Activé par défaut : sans réglage trouvé, on garde le Jester
+    static bool SettingEnabled()
+    {
+        var st = FindSetting(SettingKey);
+        return st == null || st.Value >= 0.5f;
     }
 
     // ===================== Chaque frame (DebugMenu.Update) =====================
     internal static void Tick()
     {
-        DumpSettings();
+        EnsureSetting();
         var gm = GameManager.instance;
         if (gm == null) { ResetServer(); ResetClient(); HideUi(); return; }
         if (NetworkServer.active) ServerTick(gm);
