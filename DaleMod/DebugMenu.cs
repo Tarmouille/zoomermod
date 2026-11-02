@@ -62,6 +62,7 @@ public class DebugMenu : MonoBehaviour
         try { WaterDamage.Tick(); } catch (Exception ex) { Plugin.L.LogError("[WATERPC] " + ex); }
         try { PowerNap.Tick(); } catch (Exception ex) { Plugin.L.LogError("[NAP] " + ex); }
         try { ChainMail.Tick(); } catch (Exception ex) { Plugin.L.LogError("[CHAIN] " + ex); }
+        try { Jester.Tick(); } catch (Exception ex) { Plugin.L.LogError("[JESTER] " + ex); }
 #if DEBUG
         // Menu F7 : seulement dans la build Debug (la build Release est celle distribuée aux amis)
         var kb = Keyboard.current;
@@ -221,6 +222,9 @@ public class DebugMenu : MonoBehaviour
             if (GUI.Button(new Rect(x + 120 + i * 110, y, 104, 24), sub.ToString()))
                 Run(() => SetRole(tc, chosen, lp => lp.ServerSetSubRole(sub, true), "Sous-rôle : " + sub));
         }
+        // Jester (sous-rôle caché ZoomerMod) : forcé sans jamais être affiché dans ce menu
+        if (GUI.Button(new Rect(x + 120 + SubRoles.Length * 110, y, 104, 24), "Jester"))
+            Run(() => SetRole(tc, chosen, Jester.Force, "Jester (caché)"));
         y += 34;
 
         // --- Partie ---
