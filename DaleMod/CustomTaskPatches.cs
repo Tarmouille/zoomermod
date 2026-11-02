@@ -720,7 +720,7 @@ static class CustomTaskPatches
                 if (key == d.Key + ".title") { __result = Text(d.TitleFr, d.TitleEn); return false; }
                 if (key == d.Key + ".description") { __result = Text(d.DescFr, d.DescEn); return false; }
             }
-            var extra = Jester.Localize(key);   // réglage du lobby du Jester
+            var extra = RoleKit.Localize(key);   // réglages du lobby des rôles bonus
             if (extra != null) { __result = extra; return false; }
             return true;
         }

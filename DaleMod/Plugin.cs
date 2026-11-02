@@ -70,8 +70,11 @@ public class Plugin : BasePlugin
         StaplerTrap.Register();
         Harmony.CreateAndPatchAll(typeof(Karaoke));
         Karaoke.Register();
+        Harmony.CreateAndPatchAll(typeof(RoleKit));   // rôles bonus : carte de rôle, écran de fin
         Harmony.CreateAndPatchAll(typeof(Jester));
         Jester.Register();
+        Harmony.CreateAndPatchAll(typeof(Syndic));
+        Syndic.Register();
 
         ClassInjector.RegisterTypeInIl2Cpp<DebugMenu>();
         AddComponent<DebugMenu>();

@@ -62,7 +62,7 @@ public class DebugMenu : MonoBehaviour
         try { WaterDamage.Tick(); } catch (Exception ex) { Plugin.L.LogError("[WATERPC] " + ex); }
         try { PowerNap.Tick(); } catch (Exception ex) { Plugin.L.LogError("[NAP] " + ex); }
         try { ChainMail.Tick(); } catch (Exception ex) { Plugin.L.LogError("[CHAIN] " + ex); }
-        try { Jester.Tick(); } catch (Exception ex) { Plugin.L.LogError("[JESTER] " + ex); }
+        try { RoleKit.Tick(); } catch (Exception ex) { Plugin.L.LogError("[ROLES] " + ex); }
 #if DEBUG
         // Menu F7 : seulement dans la build Debug (la build Release est celle distribuée aux amis)
         var kb = Keyboard.current;
@@ -162,7 +162,8 @@ public class DebugMenu : MonoBehaviour
         y += 20;
 
         // Avant la partie aussi (dans le lobby) : réglage lu par l'hôte au tirage du Jester
-        Jester.AnyPlayerCount = GUI.Toggle(new Rect(x, y, 520, 22), Jester.AnyPlayerCount, " Jester même à moins de 5 joueurs (à cocher avant de lancer la partie)");
+        GUI.Label(new Rect(x, y, 300, 22), "Rôles bonus au prochain tirage (avant la partie) :");
+        if (GUI.Button(new Rect(x + 300, y, 250, 22), RoleKit.ModeLabel())) RoleKit.NextMode();
         y += 26;
         var tc = LocalTC;
         if (tc == null) { GUI.Label(new Rect(x, y, w, 22), "Pas de partie en cours (TaskController local introuvable)"); return; }
@@ -228,6 +229,14 @@ public class DebugMenu : MonoBehaviour
         // Jester (sous-rôle caché ZoomerMod) : forcé sans jamais être affiché dans ce menu
         if (GUI.Button(new Rect(x + 120 + SubRoles.Length * 110, y, 104, 24), "Jester"))
             Run(() => SetRole(tc, chosen, Jester.Force, "Jester (caché)"));
+        y += 28;
+        if (GUI.Button(new Rect(x + 120, y, 140, 24), "Syndicaliste"))
+            Run(() =>
+            {
+                string err = null;
+                var r = SetRole(tc, chosen, lp => err ??= Syndic.Force(lp), "Syndicaliste");
+                return err ?? r;
+            });
         y += 34;
 
         // --- Partie ---
