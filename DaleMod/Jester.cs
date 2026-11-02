@@ -232,7 +232,8 @@ static class Jester
         catch (Exception e) { Plugin.L.LogError("[JESTER] carte de rôle : " + e); }
     }
 
-    static void ResetClient() { mine = false; turnsLeft = 0; status = Status.Playing; revealName = null; }
+    static IntPtr gmPtr;
+    static void ResetClient() { mine = false; turnsLeft = 0; status = Status.Playing; }
 
     // ===================== Tous : écran de fin =====================
     static string revealName;
@@ -242,6 +243,7 @@ static class Jester
     {
         revealName = NameOf(it) ?? "?";
         revealWon = won;
+        Plugin.L.LogInfo($"[JESTER] révélation reçue (Jester {(won ? "gagnant" : "perdant")}), écran de fin {(ResultTab.instance == null ? "pas encore ouvert" : "ouvert")}");
         ApplyResult();
     }
 
@@ -357,9 +359,11 @@ static class Jester
     {
         EnsureSetting();
         var gm = GameManager.instance;
-        if (gm == null) { ResetServer(); ResetClient(); HideUi(); return; }
+        if (gm == null) { ResetServer(); HideUi(); return; }
         if (NetworkServer.active) ServerTick(gm);
-        if (gm.IsState(GameStates.WaitingForPlayerConnections)) { ResetClient(); HideUi(); return; }
+        // Chez les clients, l'état de la partie (IsState) n'est pas fiable : seul le serveur fait tourner la machine
+        // d'états. Nouvelle partie = nouveau GameManager (scène rechargée) : on oublie alors le Jester et la révélation.
+        if (gm.Pointer != gmPtr) { gmPtr = gm.Pointer; ResetClient(); revealName = null; }
         UpdateHelp();
         UpdateHint();
     }
