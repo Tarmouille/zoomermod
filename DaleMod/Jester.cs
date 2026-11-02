@@ -240,9 +240,23 @@ static class Jester
 
     static void Reveal(Props.Scripts.Interactable it, bool won)
     {
-        revealName = it?.GetComponent<Player.PlayerController>()?.lobbyPlayer?.username ?? "?";
+        revealName = NameOf(it) ?? "?";
         revealWon = won;
         ApplyResult();
+    }
+
+    // Nom du joueur derrière l'objet qui a porté le signal (son PlayerInteractable) : même identité réseau que son
+    // PlayerController, qui n'est pas forcément sur le même GameObject
+    static string NameOf(Props.Scripts.Interactable it)
+    {
+        if (it == null) return null;
+        var pc = it.GetComponent<Player.PlayerController>() ?? it.GetComponentInParent<Player.PlayerController>();
+        if (pc == null && it.netIdentity != null)
+            foreach (var x in Object.FindObjectsOfType<Player.PlayerController>())
+                if (x.netIdentity != null && x.netIdentity.Pointer == it.netIdentity.Pointer) { pc = x; break; }
+        var name = pc?.lobbyPlayer?.username;
+        if (string.IsNullOrEmpty(name)) Plugin.L.LogWarning($"[JESTER] nom introuvable (objet '{it.name}', joueur {(pc == null ? "absent" : "sans LobbyPlayer")})");
+        return string.IsNullOrEmpty(name) ? null : name;
     }
 
     [HarmonyPatch(typeof(ResultTab), nameof(ResultTab.SetResult))]
@@ -260,6 +274,11 @@ static class Jester
                 if (rt.resultText != null) rt.resultText.text = T("Le Jester gagne !", "The Jester wins!");
                 if (rt.descriptionText != null) rt.descriptionText.text = T($"{revealName} était le Jester… et s'est fait virer !", $"{revealName} was the Jester… and got fired!");
                 if (rt.tabBarColorImage != null) rt.tabBarColorImage.color = Pink;
+                // Fond de l'écran (bleu ou rouge selon l'équipe) : rose, même transparence
+                // (l'animation d'ouverture de l'onglet repart de backgroundColor : on change les deux)
+                var bg = rt.backgroundColor;
+                rt.backgroundColor = new Color(Pink.r, Pink.g, Pink.b, bg.a);
+                if (rt.background != null) { var a = rt.background.color.a; rt.background.color = new Color(Pink.r, Pink.g, Pink.b, a); }
                 if (rt.specialistCrown != null) rt.specialistCrown.SetActive(false);
                 if (rt.slackerCrown != null) rt.slackerCrown.SetActive(false);
             }
