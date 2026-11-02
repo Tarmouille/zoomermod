@@ -23,6 +23,7 @@ namespace DaleMod;
 static class Jester
 {
     const int MinPlayers = 5, MaxTurns = 40;
+    internal static bool AnyPlayerCount;   // menu F7 (Debug) : Jester tiré même à moins de 5 joueurs
     // Signaux (NetSignal) : "tu es le Jester, N tours restants" = YouBase - N ; puis gagné / raté ; révélation finale.
     const float YouBase = -9100f, WonSignal = -9150f, FailedSignal = -9151f, RevealWon = -9160f, RevealLost = -9161f;
     static readonly Color Pink = new(1f, 0f, 1f);
@@ -104,7 +105,7 @@ static class Jester
             count++;
             if (lp.playerRole == PlayerRole.Specialist && lp.subRole == SubRole.None && !lp.isFired) candidates.Add(lp);
         }
-        if (count < MinPlayers || candidates.Count == 0) { Plugin.L.LogInfo($"[JESTER] pas de Jester ({count} joueurs)"); return; }
+        if ((count < MinPlayers && !AnyPlayerCount) || candidates.Count == 0) { Plugin.L.LogInfo($"[JESTER] pas de Jester ({count} joueurs)"); return; }
         Make(candidates[new System.Random().Next(candidates.Count)], gm);
     }
 
