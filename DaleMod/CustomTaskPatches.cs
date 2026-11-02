@@ -451,6 +451,10 @@ static class CustomTaskPatches
         if (bound.TryGetValue(t.Pointer, out var d)) return d;
         var name = t.GetIl2CppType().Name;
         if (Array.Find(All, x => x.Carrier.Name == name) == null) return null;
+        // Tableau blanc : tâches d'exemple créées une par entrée de la liste, dans l'ordre (voir BoardSequence).
+        // Pas de liaison durable : ces objets sont jetés, leur adresse servira à d'autres.
+        if (boardSeq != null)
+            return boardSeq.TryGetValue(name, out var q) && q.Count > 0 ? q.Dequeue() : null;
         // 1. tâche en cours de création par InstantiateAndAssignTask(index) : définition exacte
         // 2. assignation du menu debug (PrepareAssign)
         // 3. repli (ne devrait plus arriver) : première définition de ce support, signalée dans le log
@@ -468,6 +472,39 @@ static class CustomTaskPatches
         bound[t.Pointer] = d;
         return d;
     }
+
+    // Tableau blanc (WhiteBoardController.UpdateTaskList) : il liste les tâches tirables en créant un exemple de chaque
+    // entrée de la liste. Nos tâches partagent quelques supports (LightPumpkinTask…) : sans aide, chaque exemple prenait
+    // la première définition du support -> la même tâche écrite plusieurs fois. Pendant la mise à jour, chaque support
+    // reçoit ses définitions dans l'ordre de la liste (null = vraie tâche du jeu sur ce support).
+    static Dictionary<string, Queue<CustomTask>> boardSeq;
+
+    [HarmonyPatch(typeof(WhiteBoardController), nameof(WhiteBoardController.UpdateTaskList))]
+    [HarmonyPrefix]
+    static void BeforeBoard()
+    {
+        boardSeq = new Dictionary<string, Queue<CustomTask>>();
+        TaskList list = null;
+        try { list = (DebugMenu.LocalTC ?? UnityEngine.Object.FindObjectOfType<TaskController>())?.GetEnabledTaskList(); } catch { }
+        if (list != null)
+            for (int i = 0; i < list.Count; i++)
+            {
+                var n = list[i].Item1?.Name;
+                if (n == null || Array.Find(All, x => x.Carrier.Name == n) == null) continue;
+                if (!boardSeq.TryGetValue(n, out var q)) boardSeq[n] = q = new Queue<CustomTask>();
+                q.Enqueue(CustomAt(i, list.Count));
+            }
+        else
+            foreach (var d in All)
+            {
+                if (!boardSeq.TryGetValue(d.Carrier.Name, out var q)) boardSeq[d.Carrier.Name] = q = new Queue<CustomTask>();
+                q.Enqueue(d);
+            }
+    }
+
+    [HarmonyPatch(typeof(WhiteBoardController), nameof(WhiteBoardController.UpdateTaskList))]
+    [HarmonyFinalizer]
+    static void AfterBoard() => boardSeq = null;
 
     // Le jeu crée chaque tâche à partir de sa position dans la liste des tâches activées : on note la définition
     // custom correspondante le temps de la création (SetUpTask / Find sont appelés pendant cet appel).

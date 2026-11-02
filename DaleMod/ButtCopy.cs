@@ -150,8 +150,17 @@ static class ButtCopy
         string sit = AnimName(pc, Player.StateMachineLogic.States.InChair), idle = AnimName(pc, Player.StateMachineLogic.States.Idle);
         Plugin.L.LogInfo($"[BUTT] animation assise '{sit}' (repos '{idle}') animator={(anim == null ? "-" : "ok")}");
         if (anim == null || string.IsNullOrEmpty(sit)) return;
-        anim.CrossFade(sit, 0.2f);
+        SitTrigger(anim, sit, idle);
         seated[pc.Pointer] = (anim, sit, idle, Time.time + SitSeconds + 0.3f);
+        // Diagnostic : paramètres de l'animateur, puis ce qu'il joue vraiment 1 s plus tard (UpdateSeatAnims)
+        try
+        {
+            var ps = new System.Collections.Generic.List<string>();
+            foreach (var prm in anim.parameters) ps.Add($"{prm.name}:{prm.type}");
+            Plugin.L.LogInfo($"[BUTT] animateur '{anim.name}' ({anim.layerCount} calques, {anim.runtimeAnimatorController?.name}) paramètres : {string.Join(", ", ps)}");
+        }
+        catch (Exception e) { Plugin.L.LogWarning("[BUTT] paramètres : " + e.Message); }
+        probeAt[pc.Pointer] = Time.time + 1f;
     }
 
     static string AnimName(PlayerController pc, Player.StateMachineLogic.States s)
@@ -172,20 +181,61 @@ static class ButtCopy
         return prop?.GetValue(st) as string;
     }
 
+    static readonly System.Collections.Generic.Dictionary<IntPtr, float> probeAt = new();
+    static float nextRetrigger;
+
+    // L'animateur du joueur (PlayerAnimController) se pilote par déclencheurs : "sit", "idle", "movement"… (noms = animName
+    // des états du jeu). On annule ceux qui ramènent debout et on déclenche "sit".
+    static void SitTrigger(Animator anim, string sit, string idle)
+    {
+        if (!string.IsNullOrEmpty(idle)) anim.ResetTrigger(idle);
+        anim.ResetTrigger("movement");
+        anim.SetTrigger(sit);
+    }
+
+    // Pose assise en cours : un clip "sit" sur le calque de base
+    static bool PlayingSit(Animator anim)
+    {
+        foreach (var c in anim.GetCurrentAnimatorClipInfo(0))
+            if (c.clip != null && c.clip.name.IndexOf("sit", StringComparison.OrdinalIgnoreCase) >= 0) return true;
+        return false;
+    }
+
     static void UpdateSeatAnims()
     {
         foreach (var key in new System.Collections.Generic.List<IntPtr>(seated.Keys))
         {
             var (anim, sit, idle, until) = seated[key];
             if (anim == null) { seated.Remove(key); continue; }
+            if (probeAt.TryGetValue(key, out var at) && Time.time >= at)
+            {
+                probeAt.Remove(key);
+                try
+                {
+                    for (int l = 0; l < anim.layerCount; l++)
+                    {
+                        var info = anim.GetCurrentAnimatorStateInfo(l);
+                        var clips = new System.Collections.Generic.List<string>();
+                        foreach (var c in anim.GetCurrentAnimatorClipInfo(l)) clips.Add($"{c.clip?.name}x{c.weight:0.00}");
+                        Plugin.L.LogInfo($"[BUTT] 1 s après : calque {l} '{anim.GetLayerName(l)}' poids {anim.GetLayerWeight(l):0.00}, " +
+                                         $"état sit={info.IsName(sit)} hash={info.shortNameHash}, clips [{string.Join(", ", clips)}]");
+                    }
+                }
+                catch (Exception e) { Plugin.L.LogWarning("[BUTT] sonde : " + e.Message); }
+            }
             if (Time.time >= until)
             {
-                if (!string.IsNullOrEmpty(idle)) anim.CrossFade(idle, 0.2f);
+                anim.ResetTrigger(sit);
+                if (!string.IsNullOrEmpty(idle)) anim.SetTrigger(idle);
                 seated.Remove(key);
                 continue;
             }
-            // Le jeu peut relancer son animation : on maintient la pose assise
-            if (!anim.IsInTransition(0) && !anim.GetCurrentAnimatorStateInfo(0).IsName(sit)) anim.Play(sit);
+            // Le jeu peut relancer son animation (déclencheur "idle") : on maintient la pose assise
+            if (Time.time >= nextRetrigger && !anim.IsInTransition(0) && !PlayingSit(anim))
+            {
+                nextRetrigger = Time.time + 0.4f;   // laisse le temps à la transition
+                SitTrigger(anim, sit, idle);
+            }
         }
     }
 
