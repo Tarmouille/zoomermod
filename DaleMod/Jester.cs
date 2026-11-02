@@ -58,10 +58,19 @@ static class Jester
     static int serverTurns;
     static bool serverWon, serverFailed, drawn, revealed;
 
-    static void ResetServer() { jesterId = 0; serverTurns = 0; serverWon = serverFailed = drawn = revealed = false; }
+    const float JanitorDelay = 6f;
+    static float janitorAt = -1f;
+
+    static void ResetServer() { janitorAt = -1f; jesterId = 0; serverTurns = 0; serverWon = serverFailed = drawn = revealed = false; }
 
     static void ServerTick(GameManager gm)
     {
+        if (janitorAt > 0f && Time.time >= janitorAt)
+        {
+            janitorAt = -1f;
+            try { LobbyById(jesterId)?.ServerSetPlayerRole(PlayerRole.Janitor); Plugin.L.LogInfo("[JESTER] passé Janitor"); }
+            catch (Exception e) { Plugin.L.LogError("[JESTER] Janitor : " + e); }
+        }
         if (gm.IsState(GameStates.WaitingForPlayerConnections)) { if (drawn || jesterId != 0 || revealed) ResetServer(); return; }
         // Tirage dès que le jeu a distribué les rôles (début de partie), pour que la carte de rôle du Jester s'affiche ;
         // au plus tard au passage en jeu
@@ -150,9 +159,11 @@ static class Jester
         serverWon = true;
         try
         {
-            // Écran de renvoi d'un spécialiste chez tous, sans passage en spectateur ; puis Janitor
-            lp.RpcFirePlayer(true, PlayerRole.Specialist, PlayerRole.Janitor, false);
-            lp.ServerSetPlayerRole(PlayerRole.Janitor);
+            // Écran de renvoi d'un spécialiste chez tous ("était l'un des meilleurs…"), sans passage en spectateur.
+            // L'écran affiche le rôle passé ici : Specialist. Le passage en Janitor vient après, une fois l'écran
+            // affiché chez tous (ServerTick), sinon l'écran annoncerait un Janitor.
+            lp.RpcFirePlayer(true, PlayerRole.Specialist, PlayerRole.Specialist, false);
+            janitorAt = Time.time + JanitorDelay;
         }
         catch (Exception e) { Plugin.L.LogError("[JESTER] renvoi : " + e); }
         // Ce que le vrai renvoi fait aussi (on l'a sauté) : comptes des équipes, fin de la réunion
