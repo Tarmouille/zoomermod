@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace DaleMod;
 
-// Tâche "Power Nap" (rouge, Slacker ; voir TaskPools) : s'asseoir à son poste et y dormir 20 s.
+// Tâche "Power Nap" (rouge, Slacker ; voir TaskPools) : s'asseoir à son poste et y dormir 15 s.
 // L'écran s'assombrit peu à peu ; 5 s avant la fin, un ronflement (snore1 ou snore2 au hasard, une fois par sieste)
 // est entendu par tout le monde. Si le manager passe à moins de 3 m, c'est raté : la sieste recommence de zéro.
 // Le ronflement part du client du dormeur : signal client -> serveur -> tous (NetSignal).
@@ -21,7 +21,7 @@ static class PowerNap
     // Un signal par son : le dormeur tire le son au hasard, tout le monde joue le même
     static readonly float[] SnoreUp = { -73.1f, -73.2f }, Snore = { -73.3f, -73.4f };
     static readonly string[] SnoreFiles = { "snore1.wav", "snore2.wav" };
-    const float NapSeconds = 20f, SnoreBeforeEnd = 5f, ManagerNear = 3f, CaughtSeconds = 3f;
+    const float NapSeconds = 15f, SnoreBeforeEnd = 5f, ManagerNear = 3f, CaughtSeconds = 3f;
 
     static bool TaskActive() => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), Key);
     static string MyName() => LobbyManager.instance?.GetLocalPlayer()?.username;

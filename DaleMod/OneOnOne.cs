@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace DaleMod;
 
-// "1 to 1" : 20 s en tête-à-tête dans le bureau d'un "chef" (Manager, ou Assistant s'il y en a un), personne d'autre
+// "1 to 1" : 15 s en tête-à-tête dans le bureau d'un "chef" (Manager, ou Assistant s'il y en a un), personne d'autre
 // dans la pièce. Si quelqu'un d'autre est dans le bureau, ou si l'un des deux en sort, le compteur repart à zéro.
 // - "1 to 1" (bleue, Specialist ; pas pour le Manager ; pas tirée sans chef) : avec un chef, dans SON bureau.
 // - "1 to 1 Manager" (Manager ou Assistant) : avec n'importe quel autre joueur, dans MON bureau.
@@ -21,7 +21,7 @@ static class OneOnOne
 {
     internal const string Key = "dalemod.oneToOne", ManagerKey = "dalemod.oneToOneManager";
     internal const string MetAction = "Met", ManagerObj = "Manager", EmployeeObj = "Employee";
-    const float Needed = 20f, Poll = 0.25f, FallbackDistance = 3f;
+    const float Needed = 15f, Poll = 0.25f, FallbackDistance = 3f;
 
     static bool Active(string key) => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), key);
 

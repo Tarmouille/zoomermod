@@ -196,7 +196,7 @@ static class CustomTaskPatches
             Steps = new[]
             {
                 ("Enter", "WorkStation" + MineSuffix, "Aller à ton poste de travail", "Go to your workstation"),
-                (PowerNap.NappedAction, PowerNap.DeskObj, "Dormir 20 s sans que le manager te voie", "Sleep for 20 s without the manager seeing you"),
+                (PowerNap.NappedAction, PowerNap.DeskObj, "Dormir 15 s sans que le manager te voie", "Sleep for 15 s without the manager seeing you"),
             },
         },
         new CustomTask
@@ -328,24 +328,24 @@ static class CustomTaskPatches
         },
         new CustomTask
         {
-            // 20 s seul avec le manager (ou l'assistant) dans son bureau (OneOnOne.cs) ; pas pour le manager, pas sans chef
+            // 15 s seul avec le manager (ou l'assistant) dans son bureau (OneOnOne.cs) ; pas pour le manager, pas sans chef
             Carrier = typeof(LightPumpkinTask), Key = OneOnOne.Key, Role = PlayerRole.Specialist, NotForManager = true, RequiresManager = true,
             TitleFr = "1 to 1", TitleEn = "1 to 1",
             DescFr = "Un petit point, juste toi et moi", DescEn = "A quick catch-up, just you and me",
             Steps = new[]
             {
-                (OneOnOne.MetAction, OneOnOne.ManagerObj, "Rester 20 s seul avec le manager (ou l'assistant) dans son bureau", "Spend 20 s alone with the manager (or the assistant) in their office"),
+                (OneOnOne.MetAction, OneOnOne.ManagerObj, "Rester 15 s seul avec le manager (ou l'assistant) dans son bureau", "Spend 15 s alone with the manager (or the assistant) in their office"),
             },
         },
         new CustomTask
         {
-            // L'équivalent côté chef : 20 s seul avec n'importe quel joueur dans son propre bureau (OneOnOne.cs)
+            // L'équivalent côté chef : 15 s seul avec n'importe quel joueur dans son propre bureau (OneOnOne.cs)
             Carrier = typeof(ExtinguishPumpkinTask), Key = OneOnOne.ManagerKey, Role = PlayerRole.Manager, ForAssistant = true,
             TitleFr = "1 to 1 Manager", TitleEn = "1 to 1 Manager",
             DescFr = "Ma porte est toujours ouverte (sauf pendant le 1 to 1)", DescEn = "My door is always open (except during the 1 to 1)",
             Steps = new[]
             {
-                (OneOnOne.MetAction, OneOnOne.EmployeeObj, "Faire un 1 to 1 de 20 s avec un collègue, seuls dans ton bureau", "Hold a 20 s 1 to 1 with a coworker, alone in your office"),
+                (OneOnOne.MetAction, OneOnOne.EmployeeObj, "Faire un 1 to 1 de 15 s avec un collègue, seuls dans ton bureau", "Hold a 15 s 1 to 1 with a coworker, alone in your office"),
             },
         },
         new CustomTask
@@ -364,14 +364,14 @@ static class CustomTaskPatches
         },
         new CustomTask
         {
-            // Préparer au tableau blanc des réunions, puis présenter 20 s dans la salle de réunion (ClientPresentation.cs)
+            // Préparer au tableau blanc des réunions, puis présenter 15 s dans la salle de réunion (ClientPresentation.cs)
             Carrier = typeof(ExtinguishPumpkinTask), Key = ClientPresentation.Key, Role = PlayerRole.Specialist,
             TitleFr = "Présentation client", TitleEn = "Client presentation",
             DescFr = "Synergie, disruption et slides en Comic Sans", DescEn = "Synergy, disruption and Comic Sans slides",
             Steps = new[]
             {
                 (ClientPresentation.PreparedAction, ClientPresentation.BoardObj, "Préparer la présentation au tableau blanc des réunions", "Prepare the presentation at the meeting whiteboard"),
-                (ClientPresentation.PresentedAction, ClientPresentation.BoardObj, "Présenter 20 s dans la salle de réunion (sans en sortir)", "Present for 20 s in the meeting room (without leaving it)"),
+                (ClientPresentation.PresentedAction, ClientPresentation.BoardObj, "Présenter 15 s dans la salle de réunion (sans en sortir)", "Present for 15 s in the meeting room (without leaving it)"),
             },
         },
         new CustomTask

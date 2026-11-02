@@ -14,14 +14,14 @@ namespace DaleMod;
 
 // Tâche "Présentation client" (bleue, Specialist ; voir TaskPools) :
 // 1) préparer sa présentation au tableau blanc des réunions (action, 3 s) ;
-// 2) la faire pendant 20 s dans la salle de réunion (la pièce du tableau blanc), et nulle part ailleurs : s'il sort de
+// 2) la faire pendant 15 s dans la salle de réunion (la pièce du tableau blanc), et nulle part ailleurs : s'il sort de
 //    la salle, le compteur repart à zéro (la présentation reste préparée).
 // Repli si la salle est introuvable : à moins de 4 m du tableau blanc.
 static class ClientPresentation
 {
     internal const string Key = "dalemod.presentationClient";
     internal const string PreparedAction = "Prepared", PresentedAction = "Presented", BoardObj = "Presentation";
-    const float PrepareSeconds = 3f, Needed = 20f, Poll = 0.25f, FallbackDistance = 4f;
+    const float PrepareSeconds = 3f, Needed = 15f, Poll = 0.25f, FallbackDistance = 4f;
 
     static bool TaskActive() => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), Key);
 
@@ -50,8 +50,8 @@ static class ClientPresentation
                 if (!TaskActive() || prepared) return;
                 prepared = true;
                 TaskHook.TriggerTaskHookCommandStatic(new TaskHook(null, BoardObj, null, PreparedAction, null, null));
-                Hud.Show(CustomTaskPatches.Text("Présentation prête : présente-la 20 s dans la salle de réunion.",
-                                                "Presentation ready: give it for 20 s in the meeting room."), 4f);
+                Hud.Show(CustomTaskPatches.Text("Présentation prête : présente-la 15 s dans la salle de réunion.",
+                                                "Presentation ready: give it for 15 s in the meeting room."), 4f);
                 Plugin.L.LogInfo("[PRES] présentation préparée");
             })),
             false,
@@ -62,7 +62,7 @@ static class ClientPresentation
             false, false));
     }
 
-    // --- 20 s dans la salle de réunion ---
+    // --- 15 s dans la salle de réunion ---
     internal static void Tick()
     {
         SyncTask();

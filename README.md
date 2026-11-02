@@ -38,10 +38,10 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 | STONKS | Imprimer une courbe et la faire signer par le manager |
 | Sauvegarde des serveurs | Lancer la sauvegarde en salle serveur (échoue si les serveurs sont en panne) |
 | Macron Explosion | Imprimer 3 fois le tract FO de son PC, puis le déposer dans 3 bacs à papier d'autres postes |
-| 1 to 1 | 20 s en tête-à-tête avec le chef dans son bureau, sans personne d'autre |
-| 1 to 1 Manager | La version du chef (ou de l'Assistant) : 20 s seul avec n'importe qui dans son bureau |
+| 1 to 1 | 15 s en tête-à-tête avec le chef dans son bureau, sans personne d'autre |
+| 1 to 1 Manager | La version du chef (ou de l'Assistant) : 15 s seul avec n'importe qui dans son bureau |
 | Commande de fournitures | Commander par mail au fournisseur, récupérer le carton à l'accueil, le ranger à l'entrepôt |
-| Présentation client | Préparer au tableau blanc, puis présenter 20 s dans la salle de réunion |
+| Présentation client | Préparer au tableau blanc, puis présenter 15 s dans la salle de réunion |
 
 ### Rouges
 
@@ -56,7 +56,7 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 | L'Autographe-gate | Dessiner, imprimer, et faire signer le dessin par un autre joueur |
 | Douche froide | Verser un gobelet d'eau sur la tête d'un collègue |
 | Dégât des eaux | Renverser un gobelet d'eau sur un PC : il court-circuite jusqu'à ce qu'on le sèche |
-| Power Nap | Dormir 20 s à son poste sans que le manager passe à côté (on entend le ronflement) |
+| Power Nap | Dormir 15 s à son poste sans que le manager passe à côté (on entend le ronflement) |
 | Spam RH | Envoyer une chaîne de mails à 5 collègues |
 | Photocopie de fesses | S'asseoir sur la photocopieuse, récupérer la copie, la punaiser |
 | Karaoké : Rise of the Machines | Mettre le CD en salle de pause et chanter 15 s sans que le manager débarque |
