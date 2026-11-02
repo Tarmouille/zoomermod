@@ -229,8 +229,26 @@ static class Jester
                 };
             if (t.cardTopBar != null) t.cardTopBar.color = Pink;
             if (t.cardBottomBar != null) t.cardBottomBar.color = Pink;
+            // Fond de la carte et de l'écran (couleur du rôle) : rose, même transparence
+            Tint(t.backgroundImage);
+            Tint(t.background);
+            t.backgroundColor = WithAlpha(Pink, t.backgroundColor.a);
         }
         catch (Exception e) { Plugin.L.LogError("[JESTER] carte de rôle : " + e); }
+    }
+
+    static Color WithAlpha(Color c, float a) => new(c.r, c.g, c.b, a);
+    static void Tint(UnityEngine.UI.Image img) { if (img != null) img.color = WithAlpha(Pink, img.color.a); }
+
+    // Écran d'intro qui précède la carte de rôle (fond à la couleur du rôle) : rose chez le Jester
+    static void TintIntro()
+    {
+        foreach (var intro in Object.FindObjectsOfType<ShowRoleIntroTab>())
+        {
+            if (intro == null) continue;
+            intro.backgroundColor = WithAlpha(Pink, intro.backgroundColor.a);
+            Tint(intro.background);
+        }
     }
 
     static IntPtr gmPtr;
@@ -365,6 +383,7 @@ static class Jester
         // Chez les clients, l'état de la partie (IsState) n'est pas fiable : seul le serveur fait tourner la machine
         // d'états. Nouvelle partie = nouveau GameManager (scène rechargée) : on oublie alors le Jester et la révélation.
         if (gm.Pointer != gmPtr) { gmPtr = gm.Pointer; ResetClient(); revealName = null; }
+        if (mine && status == Status.Playing) TintIntro();
         UpdateHelp();
         UpdateHint();
     }
