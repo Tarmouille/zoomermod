@@ -20,7 +20,8 @@ static class Caca
     internal const string Key = "dalemod.recyclage";
     internal const string AteAction = "Ate", ToiletObj = "DaleToilet";
     const float EatDuration = 5f;
-    const float SoundSignal = -13.7f, EatenSignal = -13.8f, EatAction = -13.5f, StartAction = -13.6f;
+    const float SoundSignal = -13.7f, EatenSignal = -13.8f, EatAction = -13.5f, StartAction = -13.6f,
+                CancelUp = -13.9f, CancelSignal = -13.95f;   // abandon (le mangeur s'écarte) : tout s'arrête chez tous
     static AudioClip eatClip;
     static bool soundSent;
 
@@ -40,7 +41,7 @@ static class Caca
             false,
             DelegateSupport.ConvertDelegate<Il2CppSystem.Func<bool>>(new Func<bool>(TaskActive)),
             EatDuration,
-            DelegateSupport.ConvertDelegate<UnityAction<float>>(new Action<float>(_ => { })),
+            DelegateSupport.ConvertDelegate<UnityAction<float>>(new Action<float>(_ => { lastBeat = Time.time; beats++; })),   // chaque frame tant qu'on mange
             DelegateSupport.ConvertDelegate<UnityAction<NetworkIdentity>>(new Action<NetworkIdentity>(_ => StartEat(toilet))),
             false, false));
     }
@@ -51,6 +52,7 @@ static class Caca
         Plugin.L.LogInfo($"[CACA] début de l'action (serveur={NetworkServer.active})");
         screenUntil = Time.time + EatDuration;   // éclaboussures d'écran en continu chez le mangeur (Tick)
         nextScreen = 0f;
+        eating = toilet; eatStart = lastBeat = Time.time; beats = 0;
         if (!NetworkServer.active) { NetSignal.SendToServer(toilet, StartAction); return; }   // client : le serveur lance le son
         NetSignal.Send(toilet, SoundSignal);
         soundSent = true;
@@ -63,15 +65,30 @@ static class Caca
         NetSignal.On(SoundSignal, it =>
         {
             if (eatClip == null) eatClip = ModAssets.LoadWav("cookiemonster.wav");
-            ModAudio.Play(eatClip, it.transform.position);
+            var src = ModAudio.PlayLoop(eatClip, it.transform.position);
+            if (src != null)
+            {
+                src.loop = false;
+                UnityEngine.Object.Destroy(src.gameObject, eatClip.length + 0.2f);
+                sounds[it.Pointer] = src;
+            }
             // Giclées marron autour des toilettes (chez tous), en continu pendant la dégustation, effacées au bout de 30 s
             Splash(it, 30, 2);
             splashing.Add((it.transform, Time.time + EatDuration));
             Plugin.L.LogInfo("[CACA] son joué");
         });
         // Chez chaque client : le joueur qui a la tâche et qui est à ces toilettes valide son étape
+        // Abandon : le serveur prévient tout le monde, qui coupe le son et les giclées de ces toilettes
+        NetSignal.OnServer(CancelUp, (it, _) => NetSignal.Send(it, CancelSignal));
+        NetSignal.On(CancelSignal, it =>
+        {
+            if (sounds.TryGetValue(it.Pointer, out var src)) { ModAudio.Stop(src); sounds.Remove(it.Pointer); }
+            splashing.RemoveAll(x => x.toilet == null || x.toilet.Pointer == it.transform.Pointer);
+            Plugin.L.LogInfo("[CACA] dégustation interrompue");
+        });
         NetSignal.OnLocalPlayer(EatenSignal, () =>
         {
+            eating = null;
             if (TaskActive()) TaskHook.TriggerTaskHookCommandStatic(Hook(AteAction));
             ScreenSplat.Burst(Blood.Poop, 8);   // éclaboussures en bas de l'écran du mangeur
         });
@@ -93,8 +110,23 @@ static class Caca
     static float nextSplash, screenUntil = -1f, nextScreen;
     const float SplashEvery = 0.45f, ScreenEvery = 0.7f;
 
+    static readonly System.Collections.Generic.Dictionary<IntPtr, AudioSource> sounds = new();
+    static Toilet eating;            // chez le mangeur : toilettes de la dégustation en cours
+    static float eatStart, lastBeat;
+    static int beats;
+
     internal static void Tick()
     {
+        // Le mangeur s'écarte : plus de progression depuis un moment, et pas encore à la fin des 5 s
+        if (eating != null && beats > 0 && Time.time - lastBeat > 0.35f && Time.time - eatStart < EatDuration - 0.2f)
+        {
+            var t = eating;
+            eating = null;
+            screenUntil = -1f;
+            if (NetworkServer.active) NetSignal.Send(t, CancelSignal); else NetSignal.SendToServer(t, CancelUp);
+        }
+        else if (eating != null && Time.time - eatStart > EatDuration + 2f) eating = null;   // filet de sécurité
+
         if (splashing.Count > 0 && Time.time >= nextSplash)
         {
             nextSplash = Time.time + SplashEvery;
