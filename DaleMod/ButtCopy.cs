@@ -259,7 +259,7 @@ static class ButtCopy
         if (pc.cameraController != null) { pc.cameraController.cameraSensitivity = 0f; pc.cameraController.lookInput = Vector2.zero; }
         if ((pc.transform.position - seat).sqrMagnitude > 0.0025f) Teleport(pc, seat);
         pc.transform.rotation = facing;
-        if (pc.targetState != InChair) SetSeated(pc, true);   // le jeu a pu repasser à un autre état
+        if (pc.targetState != InChair || !pc.isInChair) SetSeated(pc, true);   // le jeu a pu repasser à un autre état
     }
 
     // État "assis dans une chaise" du jeu (targetState, synchronisé chez tous) : vraie pose assise, vue par tout le monde.
@@ -274,6 +274,7 @@ static class ButtCopy
     {
         try
         {
+            pc.isInChair = on;   // "dans une chaise" pour la logique du jeu (clic gauche = lever la main, état qui tient)
             pc.SetState(on ? InChair : Idle);
             if (on == loggedSeated) reforced++;   // réimposé : le jeu était repassé à un autre état
             else
