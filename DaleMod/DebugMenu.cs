@@ -16,7 +16,7 @@ public class DebugMenu : MonoBehaviour
     public DebugMenu(IntPtr ptr) : base(ptr) { }
 
     internal static TaskController LocalTC;   // renseigné par TaskController.Update (objet possédé localement)
-    internal static bool BlockGameEnd = true;
+    internal static bool BlockGameEnd;   // désactivé par défaut ; case du menu F7 (Debug) seulement
 
     bool open;
     int page;
@@ -368,6 +368,9 @@ static class DebugMenuPatches
     [HarmonyPrefix]
     static bool NoGameEnd(ref bool __result)
     {
+#if !DEBUG
+        return true;   // version distribuée : jamais de blocage
+#endif
         if (!DebugMenu.BlockGameEnd) return true;
         __result = false;
         return false;
@@ -375,5 +378,11 @@ static class DebugMenuPatches
 
     [HarmonyPatch(typeof(GameManager), nameof(GameManager.EndGameIfFinished))]
     [HarmonyPrefix]
-    static bool NoGameEndCheck() => !DebugMenu.BlockGameEnd;
+    static bool NoGameEndCheck()
+    {
+#if !DEBUG
+        return true;
+#endif
+        return !DebugMenu.BlockGameEnd;
+    }
 }
