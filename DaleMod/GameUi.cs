@@ -25,6 +25,18 @@ static class GameUi
         return canvas.transform;
     }
 
+    // Sortie de partie : tous les textes et images du mod masqués, sauf le badge du menu (nom et logo du mod)
+    internal static void HideAll()
+    {
+        if (canvas == null) return;
+        var root = canvas.transform;
+        for (int i = 0; i < root.childCount; i++)
+        {
+            var c = root.GetChild(i);
+            if (c.name != "DaleMod_Badge" && c.name != "DaleMod_BadgeLogo") c.gameObject.SetActive(false);
+        }
+    }
+
     internal static TextMeshProUGUI NewText(string name)
     {
         var go = new GameObject(name);

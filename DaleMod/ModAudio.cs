@@ -8,6 +8,7 @@ namespace DaleMod;
 static class ModAudio
 {
     static AudioSource reference;
+    const float MinDistance = 1.5f, MaxDistance = 15f;
 
     internal static void Play(AudioClip clip, Vector3 at, float volume = 1f, AudioSource like = null)
     {
@@ -41,13 +42,14 @@ static class ModAudio
         src.clip = clip;
         src.volume = volume;
         src.spatialBlend = 1f;
-        if (src0 != null)
-        {
-            src.outputAudioMixerGroup = src0.outputAudioMixerGroup;
-            src.rolloffMode = src0.rolloffMode;
-            src.minDistance = src0.minDistance;
-            src.maxDistance = src0.maxDistance;
-        }
+        if (src0 != null) src.outputAudioMixerGroup = src0.outputAudioMixerGroup;
+        // Portée fixe : la source du jeu prise comme modèle pouvait porter très loin (ou en logarithmique, qui ne
+        // tombe jamais à zéro) et nos sons s'entendaient dans tout le bureau. Plein volume jusqu'à MinDistance, puis
+        // baisse linéaire jusqu'au silence à MaxDistance.
+        src.rolloffMode = AudioRolloffMode.Linear;
+        src.minDistance = MinDistance;
+        src.maxDistance = MaxDistance;
+        src.dopplerLevel = 0f;
         return src;
     }
 

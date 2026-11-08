@@ -22,6 +22,7 @@ class CustomTask
     public PlayerRole Role;                      // pool : Specialist = bleue, Slacker = rouge, Saboteur = noire (TaskPools)
     public string TitleFr, TitleEn, DescFr, DescEn;
     public (string action, string obj, string fr, string en)[] Steps;
+    public Func<Task, string> StepName;          // optionnel : remplace "{nom}" dans le texte des étapes (ex. la victime d'une farce)
     public Action<Task> OnSetUp;                 // optionnel : mise en place (ex. faire apparaître un objet)
     public Func<TaskHook, bool> AcceptHook;      // optionnel : false = le hook ne compte pas pour cette tâche
     public bool NotForManager;                   // tâche bleue que le Manager ne tire pas (ex. "1 to 1" avec lui)
@@ -214,8 +215,8 @@ static class CustomTaskPatches
             Steps = new[]
             {
                 (ChainMail.ForwardedAction, ChainMail.WorkMailObj, "Transférer le mail des chiffres du trimestre à un collègue", "Forward the quarterly figures e-mail to a coworker"),
-                (ChainMail.ForwardedAction, ChainMail.WorkMailObj, "Transférer le mail de la procédure d'évacuation à un autre collègue", "Forward the evacuation procedure e-mail to another coworker"),
-                (ChainMail.ForwardedAction, ChainMail.WorkMailObj, "Transférer le mail du rendez-vous Henderson à un autre collègue", "Forward the Henderson meeting e-mail to another coworker"),
+                (ChainMail.ForwardedAction, ChainMail.WorkMailObj, "Transférer le mail de la procédure d'évacuation à un collègue", "Forward the evacuation procedure e-mail to a coworker"),
+                (ChainMail.ForwardedAction, ChainMail.WorkMailObj, "Transférer le mail du rendez-vous Henderson à un collègue", "Forward the Henderson meeting e-mail to a coworker"),
             },
         },
         new CustomTask
@@ -410,6 +411,31 @@ static class CustomTaskPatches
             {
                 (Karaoke.StartedAction, Karaoke.KaraokeObj, "Mettre le CD Rise of the Machines dans la chaîne de la salle de pause", "Put the Rise of the Machines CD in the break room stereo"),
                 (Karaoke.SangAction, Karaoke.KaraokeObj, "Chanter 15 s dans la salle de pause sans que le manager débarque", "Sing for 15 s in the break room without the manager walking in"),
+            },
+        },
+        new CustomTask
+        {
+            // Coussin péteur pris au placard de la gelée, posé sur la chaise d'une victime tirée au hasard (WhoopeeCushion.cs)
+            Carrier = typeof(ExtinguishPumpkinTask), Key = WhoopeeCushion.Key, Role = PlayerRole.Slacker,
+            TitleFr = "Pascal Prout", TitleEn = "Pascal Prout",
+            DescFr = "Un grand classique de l'humour de bureau", DescEn = "A timeless office prank",
+            StepName = WhoopeeCushion.PickVictim,
+            Steps = new[]
+            {
+                (WhoopeeCushion.TookAction, WhoopeeCushion.Obj, "Prendre le coussin péteur dans le placard de la cuisine", "Take the whoopee cushion from the kitchen cupboard"),
+                (WhoopeeCushion.PlacedAction, WhoopeeCushion.Obj, "Le poser sur la chaise de {nom}", "Put it on {nom}'s chair"),
+            },
+        },
+        new CustomTask
+        {
+            // Un poisson de l'aquarium pour un des chats (Racuch.cs) ; seulement sur les cartes avec l'aquarium et un chat
+            Carrier = typeof(LightPumpkinTask), Key = Racuch.Key, Role = PlayerRole.Slacker,
+            TitleFr = "Le monde de Neko", TitleEn = "Finding Neko",
+            DescFr = "Les chats ont faim, et l'aquarium est juste là", DescEn = "The cats are hungry, and the fish tank is right there",
+            Steps = new[]
+            {
+                (Racuch.TookAction, Racuch.Obj, "Pêcher un poisson dans l'aquarium", "Catch a fish in the fish tank"),
+                (Racuch.GaveAction, Racuch.Obj, "Le donner à l'un des chats", "Give it to one of the cats"),
             },
         },
     };
@@ -679,6 +705,9 @@ static class CustomTaskPatches
         if (__instance.subTasks == null)
             __instance.subTasks = new Il2CppSystem.Collections.Generic.List<Il2CppSystem.ValueTuple<TaskHook, string, bool>>();
 
+        string stepName = null;
+        try { stepName = d.StepName?.Invoke(__instance); }
+        catch (Exception ex) { Plugin.L.LogError($"[CUSTOM] {d.TitleFr} : nom d'étape : {ex}"); }
         foreach (var s in d.Steps)
         {
             // "objet@me" : objet appartenant au joueur local (ex. son bureau), comme les étapes "Use your computer" du jeu
@@ -692,7 +721,9 @@ static class CustomTaskPatches
                 owner = LobbyManager.instance?.GetLocalPlayer()?.username;
             }
             var hook = new TaskHook(null, obj, owner, s.action, location, null);
-            var step = new Il2CppSystem.ValueTuple<TaskHook, string, bool>(hook, Text(s.fr, s.en), false);
+            var text = Text(s.fr, s.en);
+            if (stepName != null) text = text.Replace("{nom}", stepName);
+            var step = new Il2CppSystem.ValueTuple<TaskHook, string, bool>(hook, text, false);
             AddStructNative(__instance.subTasks.Pointer, step.Pointer);
         }
         try { d.OnSetUp?.Invoke(__instance); }
@@ -714,13 +745,19 @@ static class CustomTaskPatches
 
         static bool Prefix(string key, ref string __result)
         {
+            if (key != null && key.StartsWith("customize.categories."))
+            {
+                var cat = Cosmetics.Localize(key);   // catégories ajoutées par le mod (Accessoire, Manteau)
+                if (cat != null) { __result = cat; return false; }
+                return true;
+            }
             if (key == null || !key.StartsWith("dalemod.")) return true;
             foreach (var d in All)
             {
                 if (key == d.Key + ".title") { __result = Text(d.TitleFr, d.TitleEn); return false; }
                 if (key == d.Key + ".description") { __result = Text(d.DescFr, d.DescEn); return false; }
             }
-            var extra = RoleKit.Localize(key);   // réglages du lobby des rôles bonus
+            var extra = RoleKit.Localize(key) ?? Cosmetics.Localize(key);   // réglages des rôles bonus, cosmétiques
             if (extra != null) { __result = extra; return false; }
             return true;
         }

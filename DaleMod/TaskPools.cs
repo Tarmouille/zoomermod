@@ -11,7 +11,7 @@ namespace DaleMod;
 // Distribution des tâches (serveur), pour que nos tâches custom tombent comme celles du jeu :
 //   bleues = Specialist, rouges = Slacker, noires = Saboteur (couleur = premier rôle de l'entrée, comme Task.GetPlayerRole).
 //   - Specialist (et ses sous-rôles Assistant / RH / Analyst) : rouge avec la probabilité du lobby (l'Assistant tire aussi
-//     les tâches de Manager marquées ForAssistant) (TaskController.slackerTaskProbability, 30 % par défaut), sinon bleue.
+//     les tâches de Manager marquées ForAssistant) (réglage "Slacker task for specialists probability", 30 % par défaut), sinon bleue.
 //   - Slacker : noire avec une petite probabilité fixe, sinon rouge ; jamais de bleue.
 //   - Dans une couleur, chaque tâche (du jeu ou custom) a la même chance.
 // On réécrit les indices que le serveur envoie au joueur (RpcGiveNewTasks) ; les autres rôles ne sont pas touchés.
@@ -49,7 +49,8 @@ static class TaskPools
             }
             if (!dumped) { dumped = true; Dump(list); }
 
-            float red = __instance.slackerTaskProbability;
+            // Le réglage du lobby (0,3 par défaut) ; le champ du TaskController vaut 0,5 et ne le suit pas
+            float red = RoleKit.FindSetting("Slacker task for specialists probability")?.Value ?? __instance.slackerTaskProbability;
             if (red > 1f) red /= 100f;   // au cas où le réglage serait en pourcentage
 
             var taken = new HashSet<int>();
@@ -89,6 +90,8 @@ static class TaskPools
         {
             if (!managerPresent && CustomTaskPatches.CustomAt(i, list.Count)?.RequiresManager == true) continue;   // ex. "1 to 1"
             if (!Karaoke.Available && CustomTaskPatches.CustomAt(i, list.Count)?.Key == Karaoke.Key) continue;   // musique absente
+            if (!Racuch.Available && CustomTaskPatches.CustomAt(i, list.Count)?.Key == Racuch.Key) continue;    // pas d'aquarium ou de chat
+            if (!OnThisMap(list[i].Item4)) continue;   // tâche d'une autre carte (ex. objet absent ici : plantage à la préparation)
             var roles = list[i].Item2;
             if (roles == null || roles.Count == 0) continue;
             var c = roles[0];
@@ -104,6 +107,17 @@ static class TaskPools
             yield return CustomTaskPatches.CustomTitle(i, list.Count) ?? list[i].Item1.Name.Replace("Task", "");
     }
 
+    // Cartes où la tâche existe (liste vide : partout)
+    static bool OnThisMap(Il2CppSystem.Collections.Generic.List<LevelManagement.Levels> maps)
+    {
+        if (maps == null || maps.Count == 0) return true;
+        LevelManagement.Level cur = null;
+        try { cur = LobbyManager.instance?.GetCurrentLevel(); } catch { }
+        if (cur == null) return true;
+        foreach (var m in maps) if (m == cur.level) return true;
+        return false;
+    }
+
     // Une fois par partie : le contenu des pools, pour vérifier le classement des tâches du jeu
     static void Dump(TaskList list)
     {
@@ -112,7 +126,9 @@ static class TaskPools
             var e = list[i];
             var roles = new List<string>();
             if (e.Item2 != null) foreach (var r in e.Item2) roles.Add(r.ToString());
-            Plugin.L.LogInfo($"[POOL] #{i} {CustomTaskPatches.CustomTitle(i, list.Count) ?? e.Item1.Name} : {string.Join("+", roles)}");
+            var maps = new List<string>();
+            if (e.Item4 != null) foreach (var m in e.Item4) maps.Add(m.ToString());
+            Plugin.L.LogInfo($"[POOL] #{i} {CustomTaskPatches.CustomTitle(i, list.Count) ?? e.Item1.Name} : {string.Join("+", roles)} | actif {e.Item3} | cartes {(maps.Count == 0 ? "toutes" : string.Join(",", maps))}{(OnThisMap(e.Item4) ? "" : " (pas ici)")}");
         }
     }
 }

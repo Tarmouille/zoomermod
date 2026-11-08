@@ -9,7 +9,7 @@ namespace DaleMod;
 [BepInPlugin("dalemod", "DaleMod", Version)]
 public class Plugin : BasePlugin
 {
-    internal const string Name = "ZoomerMod", Version = "0.8.0-dev";   // affichés sur le menu principal (DebugMenu.DrawBadge)
+    internal const string Name = "ZoomerMod", Version = "0.9.1";   // affichés sur le menu principal (DebugMenu.DrawBadge)
     internal static ManualLogSource L;
 
     public override void Load()
@@ -70,11 +70,28 @@ public class Plugin : BasePlugin
         StaplerTrap.Register();
         Harmony.CreateAndPatchAll(typeof(Karaoke));
         Karaoke.Register();
+        Harmony.CreateAndPatchAll(typeof(WhoopeeCushion));
+        WhoopeeCushion.Register();   // crée aussi l'objet réseau du coussin
+        Harmony.CreateAndPatchAll(typeof(Racuch));
+        Racuch.Register();
         Harmony.CreateAndPatchAll(typeof(RoleKit));   // rôles bonus : carte de rôle, écran de fin
         Harmony.CreateAndPatchAll(typeof(Jester));
         Jester.Register();
         Harmony.CreateAndPatchAll(typeof(Syndic));
         Syndic.Register();
+        Rival.Register();
+        Harmony.CreateAndPatchAll(typeof(Pistonne));
+        Pistonne.Register();
+        Harmony.CreateAndPatchAll(typeof(Meetings));   // déroulé des réunions (appel, vrai début, fin)
+        Harmony.CreateAndPatchAll(typeof(Usurpateur));
+        Usurpateur.Register();
+        Harmony.CreateAndPatchAll(typeof(MaitreChanteur));
+        MaitreChanteur.Register();
+        CostKiller.Register();
+        Harmony.CreateAndPatchAll(typeof(Cosmetics));       // cosmétiques gratuits (moustache, nez rouge, chemises)
+#if DEBUG
+        Harmony.CreateAndPatchAll(typeof(CosmeticRecon));   // TEMPORAIRE : étude des cosmétiques
+#endif
 
         ClassInjector.RegisterTypeInIl2Cpp<DebugMenu>();
         AddComponent<DebugMenu>();

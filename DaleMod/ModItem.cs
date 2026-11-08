@@ -144,6 +144,22 @@ class ModItem
         Plugin.L.LogInfo($"[ITEM] {Name} : modèle remonté de {lift * 100f:0.0} cm");
     }
 
+    // Copie purement visuelle du modèle (ni réseau, ni collision), le fond posé sur le pivot de l'objet rendu ;
+    // ex. le coussin péteur posé sur une chaise, créé chez chaque client
+    public GameObject CreateVisual()
+    {
+        if (template == null) EnsureRegistered();
+        if (template == null) return null;
+        MeshRenderer piece = null;
+        foreach (var r in template.GetComponentsInChildren<MeshRenderer>(true)) if (r.enabled) { piece = r; break; }
+        if (piece == null) return null;
+        var root = new GameObject("DaleMod_" + Name.Replace(" ", "") + "_Visual");
+        var copy = Object.Instantiate(piece.gameObject, root.transform, false);
+        foreach (var col in copy.GetComponentsInChildren<Collider>(true)) Object.Destroy(col);
+        copy.SetActive(true);
+        return root;
+    }
+
     // --- Côté serveur ---
     public GameObject Spawn(Vector3 pos)
     {
@@ -244,6 +260,43 @@ class ModItem
             foreach (var kv in counts) log.LogInfo($"[LIMITE] en jeu : {kv.Key} = {kv.Value}");
         foreach (var i in all) log.LogInfo($"[LIMITE] mod : {i.Name} = {CountInScene(i)} (plafond {GameLimit()})");
         return "Limites écrites dans le log";
+    }
+
+    // Placard de la gelée : le meuble de cuisine qui peut sortir de la gelée (même placard sur toutes les cartes)
+    public static KitchenCabinetController JellyCabinet()
+    {
+        foreach (var k in Object.FindObjectsOfType<KitchenCabinetController>())
+            if (k.items != null)
+                foreach (var c in k.items)
+                    if (c != null && c.TryCast<Jelly>() != null) return k;
+        return null;
+    }
+
+    // Diagnostic : objets interactifs de la cuisine (pièce du frigo), et tous les meubles de rangement de la carte
+    internal static string LogKitchen()
+    {
+        var log = Plugin.L;
+        var fridge = Fridge();
+        var room = fridge == null ? null : Rooms.Of(fridge);
+        log.LogInfo($"[CUISINE] frigo : {(fridge == null ? "introuvable" : $"'{fridge.name}'")}, pièce : {(room == null ? "?" : $"'{room.roomName}' / '{room.subRoomName}'")}");
+        int n = 0;
+        foreach (var it in Object.FindObjectsOfType<Interactable>())
+        {
+            if (it == null || fridge == null) continue;
+            float d = Vector3.Distance(it.transform.position, fridge.transform.position);
+            bool inRoom = room != null && Rooms.Of(it) == room;
+            if (!inRoom && d > 8f) continue;
+            n++;
+            log.LogInfo($"[CUISINE] {it.GetIl2CppType().Name} '{it.interactableName}' (objet '{it.name}') à {d:0.0} m{(inRoom ? "" : " (hors pièce)")}");
+        }
+        foreach (var k in Object.FindObjectsOfType<KitchenCabinetController>())
+        {
+            var r = Rooms.Of(k);
+            var content = new List<string>();
+            if (k.items != null) foreach (var c in k.items) if (c != null) content.Add(c.interactableName);
+            log.LogInfo($"[CUISINE] meuble de rangement '{k.interactableName}' (objet '{k.name}') pièce '{r?.roomName}' / '{r?.subRoomName}' max={k.maxItemCount} contenu=[{string.Join(", ", content)}]");
+        }
+        return $"{n} objets de cuisine écrits dans le log";
     }
 
     public bool LocalHolds()

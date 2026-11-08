@@ -11,12 +11,12 @@ using Object = UnityEngine.Object;
 namespace DaleMod;
 
 // Deux tâches e-mail, sur le modèle de BossMail (fenêtre "écrire" préremplie, envoi remplacé par le nôtre) :
-// - "Spam RH" (rouge, Slacker ; voir TaskPools) : envoyer une chaîne à 5 collègues différents (5 étapes identiques).
+// - "Spam RH" (rouge, Slacker ; voir TaskPools) : envoyer la chaîne 5 fois (5 étapes identiques).
 // - "Transfert de mails" (Specialist) : 3 mails de travail arrivent dans la boîte du joueur ; il doit les transférer
-//   chacun à un collègue différent (3 étapes). La fenêtre "écrire" reprend le mail affiché, sinon le prochain à transférer.
-// Le joueur choisit le destinataire avec l'outil du jeu ; on vérifie que c'est un collègue (joueur) pas encore servi.
-// Chaque envoi valide une étape. Quand tous les collègues ont reçu le mail (peu de joueurs), on peut le renvoyer
-// à quelqu'un qui l'a déjà eu : il faut toujours 5 (ou 3) envois.
+//   (3 étapes). La fenêtre "écrire" reprend le mail affiché, sinon le prochain à transférer.
+// Le joueur choisit le destinataire avec l'outil du jeu : n'importe quel joueur, lui-même compris, et autant de fois
+// qu'il veut (les joueurs virés gardent leur PC : exiger des destinataires différents bloquait la tâche).
+// Chaque envoi valide une étape.
 static class ChainMail
 {
     internal const string SpamKey = "dalemod.spamRH", ForwardKey = "dalemod.transfertMails";
@@ -68,7 +68,6 @@ static class ChainMail
 
     // --- État de la tâche en cours (remis à zéro à chaque nouvelle tâche) ---
     static IntPtr taskPtr;
-    static readonly HashSet<string> sentTo = new();          // destinataires déjà servis (adresse en minuscules)
     static readonly HashSet<int> forwarded = new();          // mails de travail déjà transférés
     static int validated;                                    // étapes validées
     static bool seeded;                                      // mails de travail déjà déposés dans la boîte
@@ -83,7 +82,7 @@ static class ChainMail
         var ptr = t?.Pointer ?? IntPtr.Zero;
         if (ptr == taskPtr) return;
         taskPtr = ptr;
-        sentTo.Clear(); forwarded.Clear(); validated = 0; seeded = false;
+        forwarded.Clear(); validated = 0; seeded = false;
     }
 
     // Adresses des collègues (joueurs) : adresse en minuscules -> adresse
@@ -95,7 +94,7 @@ static class ChainMail
         foreach (var pc in Object.FindObjectsOfType<ComputerController>())
         {
             if (pc.user == null || string.IsNullOrEmpty(pc.emailAddress)) continue;
-            if (pc.user.username == me) { mine = pc.emailAddress; continue; }
+            if (pc.user.username == me) mine = pc.emailAddress;
             all[pc.emailAddress.ToLowerInvariant()] = pc.emailAddress;
             all[pc.user.username.ToLowerInvariant()] = pc.emailAddress;   // accepte aussi le nom affiché
         }
@@ -118,7 +117,7 @@ static class ChainMail
             Plugin.L.LogInfo($"[CHAIN] {WorkMails.Length} mails de travail déposés pour {mine}");
         }
 
-        foreach (var w in Object.FindObjectsOfType<WriteEmail>())
+        foreach (var w in SceneCache.All<WriteEmail>())
         {
             if (!seen.Add(w.Pointer)) continue;
             var pc = w.GetComponentInParent<ComputerController>(true);
@@ -165,25 +164,18 @@ static class ChainMail
         bool chain = kind < 0;
         if (!Active(chain ? SpamKey : ForwardKey)) { windows.Remove(__instance.Pointer); return true; }
 
-        var coworkers = Coworkers(out _);
+        var coworkers = Coworkers(out var mine);
+        coworkers[mine.ToLowerInvariant()] = mine;   // s'envoyer le mail à soi-même compte aussi
         var typed = (__instance.receiver?.text ?? "").Replace("​", "").Trim().ToLowerInvariant();
         Plugin.L.LogInfo($"[CHAIN] envoi vers '{typed}'");
         if (!coworkers.TryGetValue(typed, out var to))
         {
-            pc.ShowPopup(CustomTaskPatches.Text("Choisis un collègue comme destinataire.", "Pick a coworker as the recipient."), "OK");
-            return false;
-        }
-        int distinct = new HashSet<string>(coworkers.Values).Count;
-        if (sentTo.Count >= distinct) sentTo.Clear();   // tout le monde l'a eu : nouveau tour
-        if (sentTo.Contains(to.ToLowerInvariant()))
-        {
-            pc.ShowPopup(CustomTaskPatches.Text("Ce collègue l'a déjà reçu. Choisis-en un autre.", "This coworker already got it. Pick another one."), "OK");
+            pc.ShowPopup(CustomTaskPatches.Text("Choisis un collègue (ou toi-même) comme destinataire.", "Pick a coworker (or yourself) as the recipient."), "OK");
             return false;
         }
 
         string subject = chain ? ChainSubject() : ForwardSubject(kind), body = chain ? ChainBody() : ForwardBody(kind);
         EmailManager.instance.SendEmail(pc.emailAddress, to, subject, body);
-        sentTo.Add(to.ToLowerInvariant());
         if (!chain) forwarded.Add(kind);
         windows.Remove(__instance.Pointer);
         // Destinataire effacé, et fenêtre de nouveau "à préremplir" si le jeu la réutilise pour le mail suivant

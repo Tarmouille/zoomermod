@@ -16,7 +16,29 @@ static class TaskHookObjectsPatches
     static TaskHook Hook(string action, string obj) => new TaskHook(null, obj, null, action, null, null);
 
     // Inscrit chaque cible absente de la liste ; renvoie true si quelque chose a été ajouté.
+    // Appelé avant chaque vérification de tâche du jeu (une par joueur, très souvent) : les ~30 recherches dans la
+    // scène coûtaient cher en images/s. On ne refait le travail que si la liste des cibles du jeu a changé depuis
+    // (reconstruite par SetAllTaskHookObjects), et au plus tard toutes les 2 s par sécurité.
+    const float RecheckSeconds = 2f;
+    static int lastCount = -1;
+    static float lastRun = -100f;
+
     internal static bool RegisterAll()
+    {
+        var all = TaskHook.taskHookObjects;
+        int count = all?.Count ?? -1;
+        if (count == lastCount && Time.unscaledTime - lastRun < RecheckSeconds) return false;
+        long t0 = Perf.Start();
+        try { return RegisterAllNow(); }
+        finally
+        {
+            lastCount = TaskHook.taskHookObjects?.Count ?? -1;
+            lastRun = Time.unscaledTime;
+            Perf.Stop("HOOKOBJ", t0);
+        }
+    }
+
+    static bool RegisterAllNow()
     {
         bool added = false;
 
@@ -154,6 +176,13 @@ static class TaskHookObjectsPatches
         added |= Targets(Hook(Karaoke.SangAction, Karaoke.KaraokeObj), Object.FindObjectsOfType<StereoController>());
         // Sauvegarde des serveurs -> les baies
         added |= Targets(Hook(ServerBackup.BackedUpAction, ServerBackup.ServersObj), Object.FindObjectsOfType<ServerController>());
+        // Pascal Prout -> le placard de la gelée (prendre le coussin), puis le poste de la victime (le poser)
+        var jelly = ModItem.JellyCabinet();
+        if (jelly != null) added |= Targets(Hook(WhoopeeCushion.TookAction, WhoopeeCushion.Obj), new[] { jelly });
+        added |= Targets(Hook(WhoopeeCushion.PlacedAction, WhoopeeCushion.Obj), WhoopeeCushion.TargetDesks());
+        // Un poisson pour Racuch -> l'aquarium (pêcher), puis le chat (donner)
+        added |= Targets(Hook(Racuch.TookAction, Racuch.Obj), Object.FindObjectsOfType<FishTankController>());
+        added |= Targets(Hook(Racuch.GaveAction, Racuch.Obj), Object.FindObjectsOfType<CatController>());
         // Attention Mr. Zoomer -> les broyeurs
         added |= Targets(Hook(Zoomer.SabotagedAction, Zoomer.ShredderObj), Object.FindObjectsOfType<Props.PaperShredder.PaperShredder>());
 

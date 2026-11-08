@@ -66,6 +66,7 @@ static class Tupperware
 
     // --- Étapes 1 et 2 : ce que tient le joueur local ---
     static bool tookSent, ateSent;
+    static IntPtr taskPtr;
 
     // Serveur : tupperwares sales à mettre en main un peu après le repas (la main n'est pas libre tout de suite)
     const float GiveDelay = 0.5f;
@@ -81,9 +82,14 @@ static class Tupperware
             if (NetworkServer.active && player != null) Dirty.GiveTo(player);
         }
 
-        if (!TaskActive()) { tookSent = ateSent = false; return; }
-        if (!tookSent && Full.LocalHolds()) { tookSent = true; TaskHook.TriggerTaskHookCommandStatic(Hook(TookAction)); Plugin.L.LogInfo("[TUPP] repas pris"); }
-        if (!ateSent && Dirty.LocalHolds()) { ateSent = true; TaskHook.TriggerTaskHookCommandStatic(Hook(AteAction)); Plugin.L.LogInfo("[TUPP] repas mangé"); }
+        // État propre à CETTE tâche : une nouvelle tâche Tupperware (l'autre variante, par exemple) repart de zéro
+        var ptr = Active()?.Pointer ?? IntPtr.Zero;
+        if (ptr != taskPtr) { taskPtr = ptr; tookSent = ateSent = false; }
+        if (!TaskActive()) return;
+        // Tupperware sale en main (le sien, ou un ramassé par terre) : pris et mangé, dans l'ordre
+        bool dirty = Dirty.LocalHolds();
+        if (!tookSent && (Full.LocalHolds() || dirty)) { tookSent = true; TaskHook.TriggerTaskHookCommandStatic(Hook(TookAction)); Plugin.L.LogInfo("[TUPP] repas pris"); }
+        if (!ateSent && dirty) { ateSent = true; TaskHook.TriggerTaskHookCommandStatic(Hook(AteAction)); Plugin.L.LogInfo("[TUPP] repas mangé"); }
     }
 
     // --- Tupperware plein : "Manger" (7 s) ; sale : pas d'action de consommation ---

@@ -189,7 +189,7 @@ static class ModAssets
         if (textures.TryGetValue(file, out var cached) && cached != null) return cached;
         var path = Path.Combine(Dir, file);
         if (!File.Exists(path)) { Plugin.L.LogWarning($"[ASSETS] {path} introuvable"); return null; }
-        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false) { hideFlags = HideFlags.DontUnloadUnusedAsset };
+        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true) { hideFlags = HideFlags.DontUnloadUnusedAsset };   // mipmaps : motifs nets de loin
         var data = new Il2CppStructArray<byte>(File.ReadAllBytes(path));
 
         var klass = IL2CPP.GetIl2CppClass("UnityEngine.ImageConversionModule.dll", "UnityEngine", "ImageConversion");

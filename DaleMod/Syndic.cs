@@ -44,8 +44,11 @@ static class Syndic
             HelpText = HelpText,
             RoleCard = RoleCard,
             OnIdentity = OnIdentity,
-            ResultLine = won => won ? T("✊ Syndicaliste : {0} a fait tomber le manager !", "✊ Union Rep: {0} brought the manager down!")
-                                    : T("✊ Syndicaliste : {0} (raté)", "✊ Union Rep: {0} (missed)"),
+            // Texte du camp gagnant gardé. Couleur de l'écran de fin : Jester > Rival > Syndicaliste (simple badge)
+            // Fond jaune chez le Syndicaliste seul, s'il a réussi (les autres gardent la couleur du camp gagnant)
+            LocalResult = (rt, _) => { if (done) RoleKit.TintResult(rt, Yellow); },
+            ResultLine = won => won ? T("Syndicaliste : {0} a fait tomber le manager !", "Union Rep: {0} brought the manager down!")
+                                    : T("Syndicaliste : {0} (raté)", "Union Rep: {0} (missed)"),
         };
         RoleKit.Add(Role);
 
@@ -53,13 +56,13 @@ static class Syndic
         {
             mine = true;
             RoleKit.RefreshRoleTabs();
-            Hud.Show(T("Tu es le SYNDICALISTE ! Fais renverser le manager par un vote. Les fainéants savent qui tu es. (F1 : aide)",
+            RoleKit.ShowAfterCard(T("Tu es le SYNDICALISTE ! Fais renverser le manager par un vote. Les fainéants savent qui tu es. (F1 : aide)",
                        "You are the UNION REP! Get the manager voted out. The slackers know who you are. (F1: help)"), 8f);
         });
         NetSignal.OnLocalPlayer(DoneSignal, () =>
         {
             done = true;
-            Hud.Show(T("Le manager est tombé : le syndicat a gagné ! ✊", "The manager is down: the union won! ✊"), 6f);
+            Hud.Show(T("Le manager est tombé : le syndicat a gagné !", "The manager is down: the union won!"), 6f);
         });
         NetSignal.OnLocalPlayer(FailedSignal, () =>
         {
@@ -135,7 +138,7 @@ static class Syndic
         if (me == null || me.playerRole != PlayerRole.Slacker) return;   // seuls les fainéants le savent
         if (knownAs == name) return;
         knownAs = name;
-        Hud.Show(T($"{name} est le Syndicaliste de votre camp : aidez-le à faire renverser le manager par un vote ! (F1)",
+        RoleKit.ShowAfterCard(T($"{name} est le Syndicaliste de votre camp : aidez-le à faire renverser le manager par un vote ! (F1)",
                    $"{name} is your team's Union Rep: help them get the manager voted out! (F1)"), 8f);
     }
 

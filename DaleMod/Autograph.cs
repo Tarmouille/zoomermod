@@ -35,7 +35,7 @@ static class Autograph
 
     internal static void Tick()
     {
-        foreach (var img in Object.FindObjectsOfType<PrintedImage>())
+        foreach (var img in SceneCache.All<PrintedImage>())
         {
             if (seen.Add(img.netId) && Time.time - lastPrint < MineWindow && myDrawing == 0)
             {

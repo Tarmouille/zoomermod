@@ -80,7 +80,7 @@ static class BossMail
 
     internal static void Tick()
     {
-        foreach (var w in Object.FindObjectsOfType<WriteEmail>())
+        foreach (var w in SceneCache.All<WriteEmail>())
         {
             if (!seen.Add(w.Pointer)) continue;
             var pc = w.GetComponentInParent<ComputerController>(true);

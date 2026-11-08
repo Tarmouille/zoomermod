@@ -7,7 +7,9 @@ COLORS = {"powder": (242, 242, 238), "plastic": (200, 214, 226), "zip": (210, 40
           "plastic_dirty": (214, 200, 178), "lid": (70, 140, 220), "lid_dark": (40, 95, 170),
           "sauce": (170, 45, 25), "pasta": (240, 205, 110), "meat": (120, 55, 30), "smear": (150, 70, 40),
           "cup": (236, 232, 222), "label": (230, 110, 140), "foil": (190, 195, 200), "mold": (95, 150, 60),
-          "dough": (215, 170, 105), "cheese": (240, 200, 90), "crust": (180, 120, 60), "pepperoni": (170, 40, 30)}
+          "dough": (215, 170, 105), "cheese": (240, 200, 90), "crust": (180, 120, 60), "pepperoni": (170, 40, 30),
+          "rubber": (232, 90, 150), "rubber_dark": (190, 60, 115), "rubber_light": (245, 135, 185),
+          "seam": (200, 65, 125), "nozzle": (215, 75, 135), "hole": (60, 20, 35)}
 SCALE = np.array([float(x) for x in sys.argv[3].split(",")]) if len(sys.argv) > 3 else np.array([0.09, 0.03, 0.06])
 V, F, g = [], [], "powder"
 for line in open(sys.argv[1]):

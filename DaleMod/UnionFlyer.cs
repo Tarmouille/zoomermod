@@ -148,7 +148,7 @@ static class UnionFlyer
         }
 
         // Bloc-notes du tract : texte et titre (réappliqués tant qu'il est ouvert)
-        foreach (var pad in Object.FindObjectsOfType<Executables.NotePad>())
+        foreach (var pad in SceneCache.All<Executables.NotePad>())
         {
             if (seenPads.Add(pad.Pointer))
             {

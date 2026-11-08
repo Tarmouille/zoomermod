@@ -31,38 +31,51 @@ public class DebugMenu : MonoBehaviour
 
     void Update()
     {
-        try { ModItem.EnsureAllRegistered(); } catch (Exception ex) { Plugin.L.LogError("[ITEM] " + ex.Message); }
-        try { ModAssets.TickLoads(); } catch (Exception ex) { Plugin.L.LogError("[ASSETS] " + ex.Message); }
-        try { PcMod.Tick(); } catch (Exception ex) { Plugin.L.LogError("[PC] " + ex); }
-        try { BossMail.Tick(); } catch (Exception ex) { Plugin.L.LogError("[MAIL] " + ex); }
-        try { InkCoffee.Tick(); } catch (Exception ex) { Plugin.L.LogError("[INK] " + ex); }
-        try { Tupperware.Tick(); } catch (Exception ex) { Plugin.L.LogError("[TUPP] " + ex); }
-        try { Incident.Tick(); } catch (Exception ex) { Plugin.L.LogError("[INCIDENT] " + ex); }
-        try { FireExPrank.Tick(); } catch (Exception ex) { Plugin.L.LogError("[FIREX] " + ex); }
-        try { Zoomer.Tick(); } catch (Exception ex) { Plugin.L.LogError("[ZOOMER] " + ex); }
-        try { Blood.Tick(); } catch (Exception ex) { Plugin.L.LogError("[BLOOD] " + ex); }
-        try { ScreenSplat.Tick(); } catch (Exception ex) { Plugin.L.LogError("[SPLAT] " + ex); }
-        try { Caca.Tick(); } catch (Exception ex) { Plugin.L.LogError("[CACA] " + ex); }
-        try { Puffs.Tick(); } catch (Exception ex) { Plugin.L.LogError("[PUFF] " + ex); }
-        try { Autograph.Tick(); } catch (Exception ex) { Plugin.L.LogError("[AUTOGRAPH] " + ex); }
-        try { FridgeCleanup.Tick(); } catch (Exception ex) { Plugin.L.LogError("[FRIGO] " + ex); }
-        try { SafetyCheck.Tick(); } catch (Exception ex) { Plugin.L.LogError("[SECU] " + ex); }
-        try { CoffeeRound.Tick(); } catch (Exception ex) { Plugin.L.LogError("[CAFE] " + ex); }
-        try { PopupSpam.Tick(); } catch (Exception ex) { Plugin.L.LogError("[POPUP] " + ex); }
-        try { ServerBackup.Tick(); } catch (Exception ex) { Plugin.L.LogError("[BACKUP] " + ex); }
-        try { UnionFlyer.Tick(); } catch (Exception ex) { Plugin.L.LogError("[TRACT] " + ex); }
-        try { OneOnOne.Tick(); } catch (Exception ex) { Plugin.L.LogError("[1TO1] " + ex); }
-        try { SupplyOrder.Tick(); } catch (Exception ex) { Plugin.L.LogError("[SUPPLY] " + ex); }
-        try { ClientPresentation.Tick(); } catch (Exception ex) { Plugin.L.LogError("[PRES] " + ex); }
-        try { StaplerTrap.Tick(); } catch (Exception ex) { Plugin.L.LogError("[STAPLER] " + ex); }
-        try { Karaoke.Tick(); } catch (Exception ex) { Plugin.L.LogError("[KARAOKE] " + ex); }
-        try { Hud.Tick(); UpdateBadge(); } catch (Exception ex) { Plugin.L.LogError("[UI] " + ex); }
-        try { WaterCup.Tick(); } catch (Exception ex) { Plugin.L.LogError("[WATER] " + ex); }
-        try { ColdShower.Tick(); } catch (Exception ex) { Plugin.L.LogError("[SHOWER] " + ex); }
-        try { WaterDamage.Tick(); } catch (Exception ex) { Plugin.L.LogError("[WATERPC] " + ex); }
-        try { PowerNap.Tick(); } catch (Exception ex) { Plugin.L.LogError("[NAP] " + ex); }
-        try { ChainMail.Tick(); } catch (Exception ex) { Plugin.L.LogError("[CHAIN] " + ex); }
-        try { RoleKit.Tick(); } catch (Exception ex) { Plugin.L.LogError("[ROLES] " + ex); }
+        Perf.Frame();
+        Perf.Run("ITEM", () => { ModItem.EnsureAllRegistered(); });
+        Perf.Run("ASSETS", () => { ModAssets.TickLoads(); });
+        Perf.Run("PC", () => { PcMod.Tick(); });
+        Perf.Run("MAIL", () => { BossMail.Tick(); });
+        Perf.Run("INK", () => { InkCoffee.Tick(); });
+        Perf.Run("TUPP", () => { Tupperware.Tick(); });
+        Perf.Run("INCIDENT", () => { Incident.Tick(); });
+        Perf.Run("FIREX", () => { FireExPrank.Tick(); });
+        Perf.Run("ZOOMER", () => { Zoomer.Tick(); });
+        Perf.Run("BLOOD", () => { Blood.Tick(); });
+        Perf.Run("SPLAT", () => { ScreenSplat.Tick(); });
+        Perf.Run("CACA", () => { Caca.Tick(); });
+        Perf.Run("PUFF", () => { Puffs.Tick(); });
+        Perf.Run("AUTOGRAPH", () => { Autograph.Tick(); });
+        Perf.Run("FRIGO", () => { FridgeCleanup.Tick(); });
+        Perf.Run("SECU", () => { SafetyCheck.Tick(); });
+        Perf.Run("CAFE", () => { CoffeeRound.Tick(); });
+        Perf.Run("POPUP", () => { PopupSpam.Tick(); });
+        Perf.Run("BACKUP", () => { ServerBackup.Tick(); });
+        Perf.Run("TRACT", () => { UnionFlyer.Tick(); });
+        Perf.Run("1TO1", () => { OneOnOne.Tick(); });
+        Perf.Run("SUPPLY", () => { SupplyOrder.Tick(); });
+        Perf.Run("PRES", () => { ClientPresentation.Tick(); });
+        Perf.Run("STAPLER", () => { StaplerTrap.Tick(); });
+        Perf.Run("PROUT", () => { WhoopeeCushion.Tick(); });
+        Perf.Run("KARAOKE", () => { Karaoke.Tick(); });
+        Perf.Run("RACUCH", () => { Racuch.Tick(); });
+        Perf.Run("COSMETIC", () => { Cosmetics.Tick(); });
+        Perf.Run("UI", () => { Hud.Tick(); UpdateBadge(); });
+        Perf.Run("WATER", () => { WaterCup.Tick(); });
+        Perf.Run("SHOWER", () => { ColdShower.Tick(); });
+        Perf.Run("WATERPC", () => { WaterDamage.Tick(); });
+        Perf.Run("NAP", () => { PowerNap.Tick(); });
+        Perf.Run("CHAIN", () => { ChainMail.Tick(); });
+        Perf.Run("ROLES", () => { RoleKit.Tick(); });
+        Perf.Run("USURP", () => { Usurpateur.Tick(); });
+        Perf.Run("CHANTEUR", () => { MaitreChanteur.Tick(); });
+        Perf.Run("COSTKILLER", () => { CostKiller.Tick(); });
+#if DEBUG
+        Perf.Run("RECON", () => { CosmeticRecon.Tick(); });
+#endif
+#if DEBUG
+        Perf.Run("REMOTE", () => { DevRemote.Tick(); });
+#endif
 #if DEBUG
         // Menu F7 : seulement dans la build Debug (la build Release est celle distribuée aux amis)
         var kb = Keyboard.current;
@@ -140,25 +153,27 @@ public class DebugMenu : MonoBehaviour
 
     void LateUpdate()
     {
-        try { ServerBlink.LateTick(); } catch (Exception ex) { Plugin.L.LogError("[SRV] " + ex); }
-        try { Zoomer.LateTick(); } catch (Exception ex) { Plugin.L.LogError("[ZOOMER] " + ex); }
-        try { WaterDamage.LateTick(); } catch (Exception ex) { Plugin.L.LogError("[WATERPC] " + ex); }
-        try { ButtCopy.LateTick(); } catch (Exception ex) { Plugin.L.LogError("[BUTT] " + ex); }
-        try { StaplerTrap.LateTick(); } catch (Exception ex) { Plugin.L.LogError("[STAPLER] " + ex); }
+        Perf.Run("SRV", () => { ServerBlink.LateTick(); });
+        Perf.Run("ZOOMER", () => { Zoomer.LateTick(); });
+        Perf.Run("WATERPC", () => { WaterDamage.LateTick(); });
+        Perf.Run("BUTT", () => { ButtCopy.LateTick(); });
+        Perf.Run("STAPLER", () => { StaplerTrap.LateTick(); });
     }
 
     void OnGUI()
     {
+        long t0 = Perf.Start();
         Nausea.DrawOverlay();
         FireExPrank.DrawOverlay();
         ColdShower.DrawOverlay();
         PowerNap.DrawOverlay();
+        Perf.Stop("GUI", t0);
         if (!open) return;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
         float x = 20, y = 20, w = 560;
-        GUI.Box(new Rect(x - 10, y - 10, w + 20, 820), "DaleMod — debug (F7)");
+        GUI.Box(new Rect(x - 10, y - 10, w + 20, 880), "DaleMod — debug (F7)");
         y += 20;
 
         // Avant la partie aussi (dans le lobby) : réglage lu par l'hôte au tirage du Jester
@@ -237,6 +252,51 @@ public class DebugMenu : MonoBehaviour
                 var r = SetRole(tc, chosen, lp => err ??= Syndic.Force(lp), "Syndicaliste");
                 return err ?? r;
             });
+        if (GUI.Button(new Rect(x + 270, y, 104, 24), "Rival"))
+            Run(() =>
+            {
+                string err = null;
+                var r = SetRole(tc, chosen, lp => err ??= Rival.Force(lp), "Rival (cible au hasard)");
+                return err ?? r;
+            });
+        // Test solo de la conversion : comme si la cible avait quitté la partie
+        if (GUI.Button(new Rect(x + 384, y, 150, 24), "Rival → Jester")) Run(() => Rival.ForceConvert() ?? "Rival devenu Jester");
+        y += 28;
+        if (GUI.Button(new Rect(x + 120, y, 140, 24), "Pistonné"))
+            Run(() =>
+            {
+                string err = null;
+                var r = SetRole(tc, chosen, lp => err ??= Pistonne.Force(lp), "Pistonné");
+                return err ?? r;
+            });
+        if (GUI.Button(new Rect(x + 270, y, 104, 24), "Usurpateur"))
+            Run(() =>
+            {
+                string err = null;
+                var r = SetRole(tc, chosen, lp => err ??= Usurpateur.Force(lp), "Usurpateur");
+                return err ?? r;
+            });
+        // Test solo : une apparence au hasard à la place d'un autre joueur
+        if (GUI.Button(new Rect(x + 384, y, 170, 24), "Mémoriser au hasard")) Run(Usurpateur.DebugMemorizeRandom);
+        y += 28;
+        if (GUI.Button(new Rect(x + 120, y, 140, 24), "Maître chanteur"))
+            Run(() =>
+            {
+                string err = null;
+                var r = SetRole(tc, chosen, lp => err ??= MaitreChanteur.Force(lp), "Maître chanteur");
+                return err ?? r;
+            });
+        // Test solo : se bâillonner soi-même à la prochaine réunion (chat bloqué)
+        if (GUI.Button(new Rect(x + 270, y, 170, 24), "Me bâillonner")) Run(MaitreChanteur.DebugGagSelf);
+        if (GUI.Button(new Rect(x + 450, y, 170, 24), "Mannequin (E)")) Run(RoleKey.ToggleDummy);
+        y += 28;
+        if (GUI.Button(new Rect(x + 120, y, 140, 24), "Cost Killer"))
+            Run(() =>
+            {
+                string err = null;
+                var r = SetRole(tc, chosen, lp => err ??= CostKiller.Force(lp), "Cost Killer");
+                return err ?? r;
+            });
         y += 34;
 
         // --- Partie ---
@@ -252,6 +312,8 @@ public class DebugMenu : MonoBehaviour
         if (GUI.Button(new Rect(x, y, 180, 24), "Serveurs : couper/rétablir")) Run(ServerProbe.ToggleAll);
         if (GUI.Button(new Rect(x + 190, y, 180, 24), "Instantané serveur visé")) Run(ServerProbe.Snapshot);
         if (GUI.Button(new Rect(x + 380, y, 180, 24), "Limites des objets")) Run(ModItem.LogLimits);
+        y += 28;
+        if (GUI.Button(new Rect(x, y, 180, 24), "Objets de la cuisine")) Run(ModItem.LogKitchen);
         y += 28;
         if (GUI.Button(new Rect(x, y, 180, 24), "M'asperger (test solo)")) Run(FireExPrank.TestSelf);
         if (GUI.Button(new Rect(x + 190, y, 180, 24), "Saboter le broyeur")) Run(Zoomer.TestArm);

@@ -20,6 +20,7 @@
     <Reference Include="$(GameDir)\BepInEx\interop\Il2Cppmscorlib.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.CoreModule.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\Mirror.dll" Private="false" />
+    <Reference Include="$(GameDir)\BepInEx\interop\com.rlabrecque.steamworks.net.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\Unity.InputSystem.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.IMGUIModule.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.PhysicsModule.dll" Private="false" />
@@ -28,6 +29,7 @@
     <Reference Include="$(GameDir)\BepInEx\interop\Unity.TextMeshPro.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.UI.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.ImageConversionModule.dll" Private="false" />
+    <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.ScreenCaptureModule.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.ParticleSystemModule.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.TextRenderingModule.dll" Private="false" />
     <Reference Include="$(GameDir)\BepInEx\interop\UnityEngine.UIModule.dll" Private="false" />

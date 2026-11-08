@@ -24,3 +24,7 @@ mod-off.cmd
 # Captures d'écran de test
 /*.jpg
 /*.png
+/*.webp
+
+# Code mis de côté, hors du mod
+parked/
