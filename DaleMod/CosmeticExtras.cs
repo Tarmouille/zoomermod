@@ -270,6 +270,22 @@ static class CosmeticExtras
         return imgs[file] = im;
     }
 
+    // Couleur moyenne des coins d'une image (les pixels opaques seulement) ; fond transparent : couleur par défaut
+    static Color32 CornerColor(Img im, Color32 fallback)
+    {
+        long r = 0, g = 0, b = 0, n = 0;
+        int s = Mathf.Max(1, Mathf.Min(im.W, im.H) / 20);
+        foreach (var (x0, y0) in new[] { (0, 0), (im.W - s, 0), (0, im.H - s), (im.W - s, im.H - s) })
+            for (int y = y0; y < y0 + s; y++)
+                for (int x = x0; x < x0 + s; x++)
+                {
+                    int i = (y * im.W + x) * 4;
+                    if (im.Px[i + 3] < 200) continue;
+                    r += im.Px[i]; g += im.Px[i + 1]; b += im.Px[i + 2]; n++;
+                }
+        return n < s * s ? fallback : new Color32((byte)(r / n), (byte)(g / n), (byte)(b / n), 255);
+    }
+
     // Couleur d'une image en (u, v) dans [0,1] (v vers le haut) ; null hors de l'image
     static Color32? Sample(Img im, float u, float v, bool wrap = false)
     {
@@ -424,30 +440,10 @@ static class CosmeticExtras
         float d = b.Front(pos) - b.depthC;
         if (front ? d <= 0f : d >= 0f) return null;
         float h = img != null && img.W > 0 ? size * img.H / img.W : size;
-        float u = 0.5f + (front ? b.Side(pos) : -b.Side(pos)) / size;
+        // vue de face, la gauche de l'image est à droite du personnage (vue de dos, à sa gauche) : pas d'image en miroir
+        float u = 0.5f + (front ? -b.Side(pos) : b.Side(pos)) / size;
         float vv = 0.5f + (b.H(pos) - hc) / h;
         return Sample(img, u, vv);
-    }
-
-    // Gilet jaune (Gilet.cs) : texture peinte sur le t-shirt du jeu dont il est tiré (mêmes coordonnées de texture) —
-    // jaune fluo, deux bandes réfléchissantes autour de la taille, deux bretelles par-dessus les épaules
-    internal static Material GiletMaterial(SkinnedMeshRenderer tee, int submesh)
-    {
-        var fluo = new Color32(212, 242, 24, 255);
-        var silver = new Color32(198, 202, 208, 255);
-        var tex = Bake(tee, submesh, fluo, (b, pos, n, arm, uv) =>
-        {
-            float t = (b.high - b.H(pos)) / Mathf.Max(1e-6f, b.high - b.low);   // 0 en haut, 1 en bas
-            float side = Mathf.Abs(b.Side(pos)) / Mathf.Max(1e-6f, b.halfW);
-            if ((t > 0.56f && t < 0.63f) || (t > 0.76f && t < 0.83f)) return (silver, 2);
-            if (t < 0.56f && side > 0.36f && side < 0.54f) return (silver, 2);
-            byte k = (byte)(Mathf.PerlinNoise(uv.x * 60f, uv.y * 60f) * 14f);
-            return (new Color32((byte)(fluo.r - k), (byte)(fluo.g - k), fluo.b, 255), 1);
-        }, "gilet_jaune");
-        if (tex == null) return null;
-        var m = new Material(Lit(Color.white, 0.3f, 0f)) { name = "DaleMod_gilet_jaune", hideFlags = HideFlags.DontUnloadUnusedAsset };
-        m.SetTexture("_BaseMap", tex);
-        return m;
     }
 
     internal static void AddClothes(PlayerCustomizer c, Il2CppSystem.Collections.Generic.List<CustomizationParameter> ps, GameObject root,
@@ -490,16 +486,19 @@ static class CosmeticExtras
                 }
             }
 
-            // T-shirts imprimés : image entière sur le devant, t-shirt de la couleur du fond de l'image
+            // T-shirts imprimés : image entière sur le devant, t-shirt de la couleur du fond de l'image (sans couleur
+            // donnée : celle des coins de l'image, ou bleu glace si son fond est transparent)
             if (ddss != null && tee != null)
-                foreach (var (file, fr, en, bg) in new[]
+                foreach (var (file, fr, en, given) in new (string, string, string, Color32?)[]
                 {
                     ("tshirt_tarm", "Kaiju chat", "Kaiju cat", new Color32(244, 232, 215, 255)),
                     ("tshirt_tarm_1", "Bouffer en entier", "Swallow whole", new Color32(0, 0, 0, 255)),
+                    ("tshirt_pingu", "Pingu", "Pingu", null),
                 })
                 {
                     var img = LoadRgba(file + ".rgba");
                     if (img == null) continue;
+                    var bg = given ?? CornerColor(img, new Color32(200, 228, 245, 255));
                     var tex = Bake(tee, SubOf(Item(shirt, "Shirt.002")), bg,
                         (b, pos, n, arm, uv) => Pick(bg, arm < 0.6f ? Decal(b, pos, n, img, true, b.chest - b.halfW * 0.2f, b.halfW * 1.35f) : null), file);
                     if (tex == null) continue;

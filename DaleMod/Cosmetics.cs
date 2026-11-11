@@ -14,7 +14,7 @@ namespace DaleMod;
 // - Cheveux : "Ponpons" (Ponpons.cs).
 // - Barbe : "Moustache ronde" (guidon qui s'enroule + petit bouc), rigide, plaquée sur le visage, couleur des cheveux.
 // - Nouvelle catégorie "Accessoire" (13e) : "Nez rouge", "Masque de Glucks" (FaceGear.cs).
-// - Lunettes : lunettes 3D, monocle ; Yeux : UwU (FaceGear.cs). Manteau : peignoir, tabard, gilet jaune (Gilet.cs).
+// - Lunettes : lunettes 3D, monocle ; Yeux : UwU (FaceGear.cs). Manteau : peignoir, tabard.
 // - Chemise : "Chemise des tests" (motif) ; Chemise, Pantalon, Veste : "Léopard" (le peignoir = chemise + jupe léopard).
 // Sauvegarde : le disque ne contient JAMAIS rien du mod. À l'écriture d'une apparence dans les préférences du jeu, on
 // écrit une version nettoyée (objets du jeu seulement) et on garde la version complète dans notre fichier ; à la lecture,
@@ -141,10 +141,6 @@ static class Cosmetics
             if (robe != null) { coat.customizationItems.Add(robe); itemIcons[robe.Pointer] = "icon_robe.png"; }
             var tabard = Tabard.NewItem(c, coat, coat.customizationItems.Count, CosmeticExtras.Textured("cosmetics/tabard.png", 0.1f, 0f), CosmeticExtras.Lit(Color.white, 0f, 0f));
             if (tabard != null) { coat.customizationItems.Add(tabard); itemIcons[tabard.Pointer] = "icon_tabard.png"; itemNames[tabard.Pointer] = T("Tabard de Solaire", "Solaire's tabard"); }
-            CustomizationItem teeItem = null;
-            if (shirt >= 0) foreach (var x in ps[shirt].customizationItems) if (x != null && x.gameObject.name == Gilet.Source) teeItem = x;
-            var gilet = teeItem != null ? Gilet.NewItem(c, coat, coat.customizationItems.Count, teeItem.colorIndexInRenderer, CosmeticExtras.Lit(Color.white, 0f, 0f)) : null;
-            if (gilet != null) { coat.customizationItems.Add(gilet); itemIcons[gilet.Pointer] = "icon_gilet.png"; itemNames[gilet.Pointer] = T("Gilet jaune", "Hi-vis vest"); }
             coat.colorItems = new Il2CppSystem.Collections.Generic.List<ColorItem>();
             int ci = 0;
             if (leopardMat != null) { var x = NewColor(root, coat, ci++, T("Léopard", "Leopard"), leopardMat, null); colorIcons[x.Pointer] = "cosmetics/swatch_leopard.png"; coat.colorItems.Add(x); }
@@ -601,17 +597,16 @@ static class Cosmetics
     [HarmonyPrefix]
     static bool SkipReset(MeshDeform __instance) => !IsOurs(__instance);
 
-    // Peignoir ou gilet jaune porté : la veste du manager (catégorie Veste) est masquée, le manteau en tient lieu
+    // Peignoir porté : la veste du manager (catégorie Veste) est masquée, le peignoir en tient lieu
     static void HideJacketUnderRobe(PlayerCustomizer c)
     {
         var robe = FindDeep(c.transform, Robe.Name);
-        var gilet = FindDeep(c.transform, Gilet.Name);
-        if (!(robe != null && robe.gameObject.activeSelf) && !(gilet != null && gilet.gameObject.activeSelf)) return;
+        if (robe == null || !robe.gameObject.activeSelf) return;
         foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(false))
             if (r.name.StartsWith("Jacket") && r.gameObject.activeSelf) r.gameObject.SetActive(false);
     }
 
-    static bool IsOurs(MeshDeform d) => d != null && d.gameObject.name.StartsWith("DaleMod_") && d.gameObject.name != Robe.Name && d.gameObject.name != Gilet.Name;
+    static bool IsOurs(MeshDeform d) => d != null && d.gameObject.name.StartsWith("DaleMod_") && d.gameObject.name != Robe.Name;
 
     // Vérification du jeu (arrivée en partie, réseau) : réglée sur ses 12 catégories, elle supprime les nôtres. On les
     // met de côté avant et on les remet après.

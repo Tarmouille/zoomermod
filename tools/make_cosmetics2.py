@@ -382,14 +382,16 @@ print('noel ok')
 # ------------------------------------------------------------------ t-shirts imprimés (images de tools/src)
 # Image entière sur le devant, t-shirt de la couleur du fond de l'image (relevée dans les coins)
 SRC = os.path.join(HERE, 'src')
-for name in ('tshirt_tarm', 'tshirt_tarm_1'):
+for name in ('tshirt_tarm', 'tshirt_tarm_1', 'tshirt_pingu'):
     p = os.path.join(SRC, name + '.png')
     if not os.path.exists(p): continue
     im = Image.open(p).convert('RGBA')
     a = np.asarray(im.convert('RGB'))
     corners = np.concatenate([a[:20, :20].reshape(-1, 3), a[:20, -20:].reshape(-1, 3), a[-20:, :20].reshape(-1, 3), a[-20:, -20:].reshape(-1, 3)])
     bg = tuple(int(x) for x in np.median(corners, axis=0))
-    write_rgba(im.resize((384, 512), Image.LANCZOS), name + '.rgba')
+    ca = np.asarray(im.getchannel('A'))
+    if min(ca[:20, :20].min(), ca[-20:, -20:].min()) < 200: bg = (200, 228, 245)   # fond transparent : bleu glace (comme le mod)
+    write_rgba(im.resize((384, round(384 * im.height / im.width)), Image.LANCZOS), name + '.rgba')   # proportions gardées
     sw = Image.new('RGBA', (256, 256), bg + (255,))
     t = im.copy(); t.thumbnail((200, 240), Image.LANCZOS)
     sw.alpha_composite(t, ((256 - t.width) // 2, (256 - t.height) // 2))

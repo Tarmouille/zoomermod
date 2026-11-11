@@ -1,6 +1,5 @@
 # Cosmétiques ZoomerMod, 3e lot : chapeaux (couronne, bonnet de bouffon, casque audio, chapeau de
-# pirate, haut-de-forme), objets du visage (lunettes 3D, monocle, yeux UwU, masque de Glucks), gilet jaune (icône),
-# icônes. Sortie : DaleMod/Assets/cosmetics/
+# pirate, haut-de-forme), objets du visage (lunettes 3D, monocle, yeux UwU, masque de Glucks), icônes. Sortie : DaleMod/Assets/cosmetics/
 #
 # Chapeaux : repère de make_cosmetics2.py (origine au SOMMET de la tête, x à droite, y en haut, z vers l'avant, tête de
 # 0,28 m de large). Objets du visage : repère "visage" de Cosmetics.cs (origine au bout du nez, yeux à y = 0,05 et
@@ -364,9 +363,6 @@ for (x, y) in (OUTLINE[2], OUTLINE[4], OUTLINE[-2], OUTLINE[-4]):   # petits tri
     dr.polygon([(px - 7, py + 6), (px + 7, py + 6), (px, py - 7)], fill=(25, 25, 25))
 tex.save(os.path.join(OUT, 'masque_glucks.png'))
 
-# ================================================================== gilet jaune (texture peinte en jeu : icône seulement)
-FLUO, SILVER = (212, 242, 24), (196, 200, 206)
-
 # ================================================================== icônes
 def new(): return Image.new('RGBA', (256, 256), (0, 0, 0, 0))
 def save(im, name): im.save(os.path.join(OUT, name))
@@ -421,11 +417,4 @@ mask = Image.new('L', (TW, TH), 0); ImageDraw.Draw(mask).polygon([to_px(x, y) fo
 icon.putalpha(mask)
 bb = mask.getbbox(); icon = icon.crop(bb); icon.thumbnail((236, 236), Image.LANCZOS)
 im = new(); im.alpha_composite(icon, ((256 - icon.width) // 2, (256 - icon.height) // 2)); save(im, 'icon_masque.png')
-im = new(); d = ImageDraw.Draw(im)                                       # gilet jaune
-d.polygon([(60, 30), (100, 30), (128, 110), (156, 30), (196, 30), (220, 70), (220, 236), (36, 236), (36, 70)], fill=FLUO + (255,))
-for yy in (150, 196):
-    d.rectangle([36, yy, 220, yy + 18], fill=SILVER + (255,))
-d.rectangle([70, 30, 86, 150], fill=SILVER + (255,)); d.rectangle([170, 30, 186, 150], fill=SILVER + (255,))
-d.line([(128, 110), (128, 236)], fill=(90, 100, 20, 255), width=3)
-save(im, 'icon_gilet.png')
 print('ok')
