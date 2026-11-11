@@ -5,3 +5,6 @@ cookiemonster.wav : fourni par l'utilisateur (converti depuis cookiemonster.mp3)
 karaoke/rise.wav : "Rise of the Machines", Music by Karl Casey @ White Bat Audio
   https://karlcasey.bandcamp.com/track/rise-of-the-machines (libre pour les jeux, avec ce crédit)
 karaoke/rise.png : pochette dessinée par tools/make_karaoke_cover.py (DaleMod)
+masque_glucks.png : visage d'après la photo officielle de Raphaël Glucksmann, © European Union 2024 – Source : EP
+  https://commons.wikimedia.org/wiki/File:1720448398743_20240708_GLUCKSMANN_Raphael_FR_006.jpg
+chapeaux, lunettes, monocle, yeux UwU, masque, gilet : générés par tools/make_cosmetics3.py (DaleMod)

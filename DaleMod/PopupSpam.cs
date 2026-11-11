@@ -262,14 +262,18 @@ static class PopupSpam
         return l;
     }
 
-    static void LoadBanners()
+    internal static void LoadBanners(bool reload = false)
     {
-        if (banners != null) return;
+        if (banners != null && !reload) return;
         banners = new List<Sprite>();
         var dir = Path.Combine(ModAssets.Dir, "popups");
         if (!Directory.Exists(dir)) return;
         var files = Directory.GetFiles(dir).Where(f => f.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
-            || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)).ToArray();
+            || f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+            // Un zip dézippé par-dessus une ancienne version laisse les anciennes bannières de même numéro (2.png de la
+            // 0.6.0 à côté du 2.jpg actuel) : par numéro, seule la plus récente compte
+            .GroupBy(f => Path.GetFileNameWithoutExtension(f), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(File.GetLastWriteTimeUtc).First()).ToArray();
         Array.Sort(files, StringComparer.OrdinalIgnoreCase);   // même ordre chez tous (même tirage)
         foreach (var f in files)
             try
@@ -278,7 +282,7 @@ static class PopupSpam
                 if (s != null) banners.Add(s);
             }
             catch (Exception e) { Plugin.L.LogWarning($"[POPUP] bannière {f} : {e.Message}"); }
-        Plugin.L.LogInfo($"[POPUP] {banners.Count} bannière(s) chargée(s)");
+        Plugin.L.LogInfo($"[POPUP] {banners.Count} bannière(s) chargée(s) : {string.Join(", ", files.Select(Path.GetFileName))}");
     }
 
     // --- Événement aléatoire : quand le jeu infecte un PC dont l'antivirus est désactivé (mêmes conditions que son

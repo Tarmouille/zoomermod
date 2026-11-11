@@ -172,10 +172,11 @@ Ajoutés à la fin des listes de l'écran de personnalisation, gratuits pour tou
 sans le mod, le personnage revient à ses objets d'origine.
 
 - **Cheveux** : Ponpons (deux chignons, raie au milieu ; les chignons disparaissent sous un chapeau).
-- **Chapeaux** : sombrero, casque viking, bonnet de Noël, casque de Solaire.
-- **Barbe** : moustache ronde. **Accessoire** : nez rouge. **Crâne** : crâne raboté.
-- **Manteau** : peignoir (léopard, éponge, Lebowski, cuir…), tabard de Solaire.
-- **Couleurs** : chemise des tests, léopard, cotte de mailles, Noël, t-shirt noir au logo, hoodie Carpenter.
+- **Chapeaux** : sombrero, casque viking, bonnet de Noël, casque de Solaire, couronne, bonnet de bouffon, casque audio, chapeau de pirate, haut-de-forme.
+- **Lunettes** : lunettes 3D, monocle. **Yeux** : UwU.
+- **Barbe** : moustache ronde. **Accessoire** : nez rouge, masque de Glucks. **Crâne** : crâne raboté.
+- **Manteau** : peignoir (léopard, éponge, Lebowski, cuir…), tabard de Solaire, gilet jaune.
+- **Couleurs** : chemise des tests, léopard, cotte de mailles, Noël, t-shirt noir au logo, t-shirts « Kaiju chat » et « Bouffer en entier », hoodie Carpenter.
 
 ## Effets et événements
 

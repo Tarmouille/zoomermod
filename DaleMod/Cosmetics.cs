@@ -13,7 +13,8 @@ namespace DaleMod;
 // Cosmétiques gratuits du mod, ajoutés À LA FIN des listes du jeu (les numéros des objets du jeu ne bougent pas) :
 // - Cheveux : "Ponpons" (Ponpons.cs).
 // - Barbe : "Moustache ronde" (guidon qui s'enroule + petit bouc), rigide, plaquée sur le visage, couleur des cheveux.
-// - Nouvelle catégorie "Accessoire" (13e) : "Nez rouge".
+// - Nouvelle catégorie "Accessoire" (13e) : "Nez rouge", "Masque de Glucks" (FaceGear.cs).
+// - Lunettes : lunettes 3D, monocle ; Yeux : UwU (FaceGear.cs). Manteau : peignoir, tabard, gilet jaune (Gilet.cs).
 // - Chemise : "Chemise des tests" (motif) ; Chemise, Pantalon, Veste : "Léopard" (le peignoir = chemise + jupe léopard).
 // Sauvegarde : le disque ne contient JAMAIS rien du mod. À l'écriture d'une apparence dans les préférences du jeu, on
 // écrit une version nettoyée (objets du jeu seulement) et on garde la version complète dans notre fichier ; à la lecture,
@@ -122,6 +123,8 @@ static class Cosmetics
             acc.colorItems = new Il2CppSystem.Collections.Generic.List<ColorItem>();
             acc.colorItems.Add(NewColor(root, acc, 0, T("Rouge", "Red"), Plain(new Color(0.85f, 0.08f, 0.1f), 0.15f), null));
             acc.colorParameters = new Il2CppSystem.Collections.Generic.List<ColorParameter>();
+            // 3e lot : lunettes 3D, monocle (Lunettes), yeux UwU (Yeux), masque de Glucks (Accessoire)
+            FaceGear.AddItems(ps, acc, head, itemIcons, itemNames);
             ps.Add(acc);
 
             // 14e catégorie : Manteau (rien / peignoir), par-dessus la chemise
@@ -138,6 +141,10 @@ static class Cosmetics
             if (robe != null) { coat.customizationItems.Add(robe); itemIcons[robe.Pointer] = "icon_robe.png"; }
             var tabard = Tabard.NewItem(c, coat, coat.customizationItems.Count, CosmeticExtras.Textured("cosmetics/tabard.png", 0.1f, 0f), CosmeticExtras.Lit(Color.white, 0f, 0f));
             if (tabard != null) { coat.customizationItems.Add(tabard); itemIcons[tabard.Pointer] = "icon_tabard.png"; itemNames[tabard.Pointer] = T("Tabard de Solaire", "Solaire's tabard"); }
+            CustomizationItem teeItem = null;
+            if (shirt >= 0) foreach (var x in ps[shirt].customizationItems) if (x != null && x.gameObject.name == Gilet.Source) teeItem = x;
+            var gilet = teeItem != null ? Gilet.NewItem(c, coat, coat.customizationItems.Count, teeItem.colorIndexInRenderer, CosmeticExtras.Lit(Color.white, 0f, 0f)) : null;
+            if (gilet != null) { coat.customizationItems.Add(gilet); itemIcons[gilet.Pointer] = "icon_gilet.png"; itemNames[gilet.Pointer] = T("Gilet jaune", "Hi-vis vest"); }
             coat.colorItems = new Il2CppSystem.Collections.Generic.List<ColorItem>();
             int ci = 0;
             if (leopardMat != null) { var x = NewColor(root, coat, ci++, T("Léopard", "Leopard"), leopardMat, null); colorIcons[x.Pointer] = "cosmetics/swatch_leopard.png"; coat.colorItems.Add(x); }
@@ -180,7 +187,9 @@ static class Cosmetics
             skull.colorItems.Add(NewColor(root, skull, 0, " ", dummy, null));
             skull.colorParameters = new Il2CppSystem.Collections.Generic.List<ColorParameter>();
             ps.Add(skull);
-            Plugin.L.LogInfo($"[COSMETIC] objets du mod ajoutés à {c.transform.parent?.name}/{c.name} ({ps.Count} catégories)");
+            var cats = new System.Text.StringBuilder();
+            foreach (var p in ps) cats.Append($" {p?.parameterName}={p?.id}({p?.customizationItems?.Count})");
+            Plugin.L.LogInfo($"[COSMETIC] objets du mod ajoutés à {c.transform.parent?.name}/{c.name} ({ps.Count} catégories :{cats})");
         }
         catch (Exception e) { Plugin.L.LogError("[COSMETIC] ajout : " + e); }
     }
@@ -313,6 +322,7 @@ static class Cosmetics
         public Transform head;
         public Vector3 nose, right, up, fwd;
         public float k;                       // échelle (largeur de tête / 0,28)
+        public float eyeDX;                   // demi-écart des yeux (0 : inconnu)
         public float Radius => 0.12f * k;     // arrondi du visage (vu de dessus)
         public List<Vector3> pts = new();     // sommets de la tête, dans le repère visage
         public Vector3 World(Vector3 f) => nose + right * f.x + up * f.y + fwd * f.z;
@@ -349,7 +359,17 @@ static class Cosmetics
         var f = new Face { head = head, fwd = head.forward, up = head.up };
         f.right = Vector3.Cross(f.up, f.fwd);
         Vector3 center = head.position;
-        var eyes = EyesCenter(c);
+        var eyePts = EyesPoints(c);
+        Vector3? eyes = null;
+        if (eyePts != null)
+        {
+            Vector3 sum = Vector3.zero;
+            foreach (var x in eyePts) sum += x;
+            eyes = sum / eyePts.Count;
+            float dx = 0f;
+            foreach (var x in eyePts) dx += Mathf.Abs(Vector3.Dot(x - eyes.Value, f.right));
+            f.eyeDX = dx / eyePts.Count;
+        }
         // largeur : étendue en x ; nez : point le plus en avant au centre
         float minX = float.MaxValue, maxX = float.MinValue;
         foreach (var w in world) { float x = Vector3.Dot(w - center, f.right); minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x); }
@@ -362,31 +382,32 @@ static class Cosmetics
         var noseF = new Vector3(0f, ny, f.Surface(0f, ny));
         f.nose = center + f.right * noseF.x + f.up * noseF.y + f.fwd * noseF.z;
         for (int i = 0; i < f.pts.Count; i++) f.pts[i] -= noseF;
-        Plugin.L.LogInfo($"[COSMETIC] yeux {(eyes.HasValue ? "trouvés" : "introuvables")} : {ey:0.000} m au-dessus de l'os de la tête, nez à {ny:0.000}, avancée {noseF.z:0.000}");
+        Plugin.L.LogInfo($"[COSMETIC] yeux {(eyes.HasValue ? "trouvés" : "introuvables")} : {ey:0.000} m au-dessus de l'os de la tête, demi-écart {f.eyeDX / f.k:0.000} (tête de 0,28), nez à {ny:0.000}, avancée {noseF.z:0.000}");
         return f;
     }
 
     const float NoseBelowEyes = 0.05f;
 
-    // Centre des yeux (maillage animé cuit), en monde
-    static Vector3? EyesCenter(PlayerCustomizer c)
+    // Sommets des yeux (maillage animé cuit), en monde. Les yeux affichés d'abord ; sinon (yeux UwU du mod portés) ceux
+    // du jeu, masqués mais toujours là.
+    static List<Vector3> EyesPoints(PlayerCustomizer c)
     {
-        foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(false))
+        SkinnedMeshRenderer pick = null;
+        foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(true))
         {
-            if (!r.name.StartsWith("Eyes") || !r.gameObject.activeInHierarchy) continue;
-            var baked = new Mesh();
-            r.BakeMesh(baked);
-            Vector3[] v = baked.vertices;
-            Object.Destroy(baked);
-            if (v.Length == 0) continue;
-            var a = new List<Vector3>(); var b = new List<Vector3>();
-            foreach (var x in v) { a.Add(r.transform.TransformPoint(x)); b.Add(r.transform.position + r.transform.rotation * x); }
-            var w = Closer(a, b, r.bounds.center) ? a : b;
-            Vector3 sum = Vector3.zero;
-            foreach (var x in w) sum += x;
-            return sum / w.Count;
+            if (!r.name.StartsWith("Eyes")) continue;
+            if (r.gameObject.activeInHierarchy) { pick = r; break; }
+            pick ??= r;
         }
-        return null;
+        if (pick == null) return null;
+        var baked = new Mesh();
+        pick.BakeMesh(baked);
+        Vector3[] v = baked.vertices;
+        Object.Destroy(baked);
+        if (v.Length == 0) return null;
+        var a = new List<Vector3>(); var b = new List<Vector3>();
+        foreach (var x in v) { a.Add(pick.transform.TransformPoint(x)); b.Add(pick.transform.position + pick.transform.rotation * x); }
+        return Closer(a, b, pick.bounds.center) ? a : b;
     }
 
     static bool Closer(List<Vector3> a, List<Vector3> b, Vector3 target)
@@ -402,9 +423,13 @@ static class Cosmetics
     internal static void Place(PlayerCustomizer c)
     {
         var headBone = Bone(c, "head");
+        Face shared = null;
+        Face Once() => shared ??= Measure(c);   // une seule mesure du visage pour tous les objets
         if (headBone != null)
-            try { CosmeticExtras.PlaceHats(c, headBone, () => Measure(c)); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] chapeaux : " + e); }
-        try { Ponpons.Place(c, () => Measure(c)); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] ponpons : " + e); }
+            try { CosmeticExtras.PlaceHats(c, headBone, Once); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] chapeaux : " + e); }
+        if (headBone != null)
+            try { FaceGear.Place(c, headBone, Once); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] visage : " + e); }
+        try { Ponpons.Place(c, Once); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] ponpons : " + e); }
 
         var head = Bone(c, "head");
         if (head == null) return;
@@ -414,7 +439,7 @@ static class Cosmetics
         if (!(moustache?.gameObject.activeSelf == true || nose?.gameObject.activeSelf == true)) return;   // rien de porté
         string key = HeadKey(c);
         if (placedFor.TryGetValue(c.Pointer, out var k0) && k0 == key) return;
-        var f = Measure(c);
+        var f = Once();
         if (f == null) { Plugin.L.LogWarning("[COSMETIC] visage introuvable"); return; }
         placedFor[c.Pointer] = key;
         if (moustache != null) SetMesh(moustache, f, FaceMesh("moustache_ronde.obj"), true, 1.25f);
@@ -552,6 +577,7 @@ static class Cosmetics
         try { placedFor.Remove(__instance.Pointer); Place(__instance); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] placement : " + e); }
         try { HideJacketUnderRobe(__instance); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] veste : " + e); }
         try { var hb = Bone(__instance, "head"); if (hb != null) CosmeticExtras.HideFaceUnderHelmet(__instance, hb); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] casque : " + e); }
+        try { var hb = Bone(__instance, "head"); if (hb != null) FaceGear.HideUnderMask(__instance, hb); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] masque : " + e); }
         try { var hb = Bone(__instance, "head"); if (hb != null) SkullCut.Apply(__instance, hb); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] crâne : " + e); }
         try { MatchLayers(__instance); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] couches : " + e); }
         Perf.Stop("COSM-APRES", t0);
@@ -575,16 +601,17 @@ static class Cosmetics
     [HarmonyPrefix]
     static bool SkipReset(MeshDeform __instance) => !IsOurs(__instance);
 
-    // Peignoir porté : la veste du manager (catégorie Veste) est masquée, le peignoir en tient lieu
+    // Peignoir ou gilet jaune porté : la veste du manager (catégorie Veste) est masquée, le manteau en tient lieu
     static void HideJacketUnderRobe(PlayerCustomizer c)
     {
         var robe = FindDeep(c.transform, Robe.Name);
-        if (robe == null || !robe.gameObject.activeSelf) return;
+        var gilet = FindDeep(c.transform, Gilet.Name);
+        if (!(robe != null && robe.gameObject.activeSelf) && !(gilet != null && gilet.gameObject.activeSelf)) return;
         foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(false))
             if (r.name.StartsWith("Jacket") && r.gameObject.activeSelf) r.gameObject.SetActive(false);
     }
 
-    static bool IsOurs(MeshDeform d) => d != null && d.gameObject.name.StartsWith("DaleMod_") && d.gameObject.name != Robe.Name;
+    static bool IsOurs(MeshDeform d) => d != null && d.gameObject.name.StartsWith("DaleMod_") && d.gameObject.name != Robe.Name && d.gameObject.name != Gilet.Name;
 
     // Vérification du jeu (arrivée en partie, réseau) : réglée sur ses 12 catégories, elle supprime les nôtres. On les
     // met de côté avant et on les remet après.

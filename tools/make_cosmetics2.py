@@ -4,8 +4,8 @@
 #
 # Repère des chapeaux : origine au SOMMET de la tête (centre), x à droite, y en haut, z vers l'avant, en mètres pour une
 # tête de 0,28 m de large (mis à l'échelle en jeu). Un groupe "g" par matière (sous-maillage).
-# Images à projeter : .rgba = largeur (int32), hauteur (int32), puis les pixels RGBA ligne par ligne, de haut en bas.
-import math, os, struct, random
+# Images à projeter : .rgba = gzip de [largeur (int32), hauteur (int32), puis les pixels RGBA ligne par ligne, de haut en bas].
+import gzip, math, os, struct, random
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -16,9 +16,8 @@ SCRATCH = os.environ.get('COSMETIC_SRC', '')
 def write_rgba(img, name):
     img = img.convert('RGBA')
     w, h = img.size
-    with open(os.path.join(OUT, name), 'wb') as f:
-        f.write(struct.pack('<ii', w, h))
-        f.write(img.tobytes())
+    with open(os.path.join(OUT, name), 'wb') as f:   # compressé (gzip) : CosmeticExtras.LoadRgba le décompresse
+        f.write(gzip.compress(struct.pack('<ii', w, h) + img.tobytes(), 9, mtime=0))
 
 # ------------------------------------------------------------------ maillages
 class Obj:
@@ -379,3 +378,20 @@ icon_santa().save(os.path.join(OUT, 'icon_santa.png'))
 sw = Image.new('RGBA', (128, 128), (190, 20, 28, 255)); d = ImageDraw.Draw(sw); d.rectangle([0, 92, 128, 128], fill=(245, 245, 245, 255))
 sw.save(os.path.join(OUT, 'swatch_noel.png'))
 print('noel ok')
+
+# ------------------------------------------------------------------ t-shirts imprimés (images de tools/src)
+# Image entière sur le devant, t-shirt de la couleur du fond de l'image (relevée dans les coins)
+SRC = os.path.join(HERE, 'src')
+for name in ('tshirt_tarm', 'tshirt_tarm_1'):
+    p = os.path.join(SRC, name + '.png')
+    if not os.path.exists(p): continue
+    im = Image.open(p).convert('RGBA')
+    a = np.asarray(im.convert('RGB'))
+    corners = np.concatenate([a[:20, :20].reshape(-1, 3), a[:20, -20:].reshape(-1, 3), a[-20:, :20].reshape(-1, 3), a[-20:, -20:].reshape(-1, 3)])
+    bg = tuple(int(x) for x in np.median(corners, axis=0))
+    write_rgba(im.resize((384, 512), Image.LANCZOS), name + '.rgba')
+    sw = Image.new('RGBA', (256, 256), bg + (255,))
+    t = im.copy(); t.thumbnail((200, 240), Image.LANCZOS)
+    sw.alpha_composite(t, ((256 - t.width) // 2, (256 - t.height) // 2))
+    sw.save(os.path.join(OUT, 'swatch_' + name + '.png'))
+    print(name, 'fond', bg)

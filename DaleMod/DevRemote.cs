@@ -15,6 +15,7 @@ namespace DaleMod;
 //   face <nom> [distance] [angle]         photo du visage -> BepInEx/shots/<nom>.png
 //   body <nom> [angle]                    photo du corps entier
 //   shot <nom>                            capture d'écran complète
+//   bannieres                             recharge les bannières des popups (liste dans le journal)
 static class DevRemote
 {
     static string CmdFile => Path.Combine(Paths.BepInExRootPath, "dalemod_cmd.txt");
@@ -205,6 +206,9 @@ static class DevRemote
                 CosmeticRecon.DumpUi(tab);
                 return "écran relevé";
             }
+            case "bannieres":
+                PopupSpam.LoadBanners(true);
+                return "bannières rechargées (voir [POPUP])";
             case "shot":
             {
                 Directory.CreateDirectory(ShotDir);

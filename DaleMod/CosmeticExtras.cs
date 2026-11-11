@@ -44,6 +44,33 @@ static class CosmeticExtras
                       "plaque" => Lit(new Color(0.62f, 0.63f, 0.64f), 0.45f, 0.3f),
                       _ => Lit(new Color(0.72f, 0.73f, 0.74f), 0.45f, 0.3f),
                   } },
+        // 3e lot (tools/make_cosmetics3.py)
+        new Hat { Name = "DaleMod_Couronne", File = "couronne.obj", Icon = "icon_couronne.png", Fr = "Couronne", En = "Crown",
+                  Mat = g => g switch
+                  {
+                      "perle" => Lit(new Color(0.96f, 0.94f, 0.88f), 0.7f, 0f),
+                      "rubis" => Lit(new Color(0.75f, 0.04f, 0.1f), 0.85f, 0f),
+                      "saphir" => Lit(new Color(0.08f, 0.2f, 0.75f), 0.85f, 0f),
+                      _ => Lit(new Color(1f, 0.76f, 0.2f), 0.7f, 0.6f),
+                  } },
+        new Hat { Name = "DaleMod_Bouffon", File = "bouffon.obj", Icon = "icon_bouffon.png", Fr = "Bonnet de bouffon", En = "Jester hat",
+                  Mat = g => g switch
+                  {
+                      "rose" => Lit(new Color(0.93f, 0.35f, 0.66f), 0.2f, 0f),
+                      "violet" => Lit(new Color(0.48f, 0.2f, 0.72f), 0.2f, 0f),
+                      _ => Lit(new Color(1f, 0.78f, 0.22f), 0.65f, 0.5f),   // bandeau et grelots
+                  } },
+        new Hat { Name = "DaleMod_CasqueAudio", File = "casque_audio.obj", Icon = "icon_casque_audio.png", Fr = "Casque audio", En = "Headset",
+                  Mat = g => g == "coussin" ? Lit(new Color(0.2f, 0.2f, 0.22f), 0.05f, 0f) : g == "micro" ? Lit(new Color(0.3f, 0.3f, 0.33f), 0.3f, 0f) : Lit(new Color(0.07f, 0.07f, 0.08f), 0.5f, 0f) },
+        new Hat { Name = "DaleMod_Pirate", File = "pirate.obj", Icon = "icon_pirate.png", Fr = "Chapeau de pirate", En = "Pirate hat",
+                  Mat = g => g switch
+                  {
+                      "galon" => Lit(new Color(1f, 0.76f, 0.2f), 0.65f, 0.5f),
+                      "crane" => Lit(new Color(0.95f, 0.94f, 0.9f), 0.2f, 0f),
+                      _ => Lit(new Color(0.06f, 0.06f, 0.07f), 0.15f, 0f),
+                  } },
+        new Hat { Name = "DaleMod_HautDeForme", File = "haut_de_forme.obj", Icon = "icon_haut_de_forme.png", Fr = "Haut-de-forme", En = "Top hat",
+                  Mat = g => g == "ruban" ? Lit(new Color(0.4f, 0.05f, 0.08f), 0.6f, 0f) : Lit(new Color(0.05f, 0.05f, 0.06f), 0.35f, 0f) },
     };
 
     internal static bool IsHatName(string n) => hats.Exists(h => h.Name == n);
@@ -216,7 +243,7 @@ static class CosmeticExtras
         {
             string n = r.gameObject.name;
             if (n.StartsWith("Hair") || n.StartsWith("Beard") || n.StartsWith("Brows") || n.StartsWith("Eyes") || n.StartsWith("Glasses")
-                || n == Ponpons.Name || n == "DaleMod_MoustacheRonde" || n == "DaleMod_NezRouge")
+                || n == Ponpons.Name || n == "DaleMod_MoustacheRonde" || n == "DaleMod_NezRouge" || FaceGear.IsGear(n))
                 r.gameObject.SetActive(false);
         }
     }
@@ -231,6 +258,13 @@ static class CosmeticExtras
         var path = Path.Combine(ModAssets.Dir, "cosmetics", file);
         if (!File.Exists(path)) { Plugin.L.LogWarning("[COSMETIC] " + path + " introuvable"); return imgs[file] = null; }
         var b = File.ReadAllBytes(path);
+        if (b.Length > 2 && b[0] == 0x1F && b[1] == 0x8B)   // compressé (gzip) par les scripts de tools/
+        {
+            using var z = new System.IO.Compression.GZipStream(new MemoryStream(b), System.IO.Compression.CompressionMode.Decompress);
+            using var ms = new MemoryStream();
+            z.CopyTo(ms);
+            b = ms.ToArray();
+        }
         im = new Img { W = BitConverter.ToInt32(b, 0), H = BitConverter.ToInt32(b, 4), Px = new byte[b.Length - 8] };
         Buffer.BlockCopy(b, 8, im.Px, 0, im.Px.Length);
         return imgs[file] = im;
@@ -383,14 +417,37 @@ static class CosmeticExtras
         return baked[key] = tex;
     }
 
-    // Projection d'une image de face (front = true) ou de dos, centrée à la hauteur hc, de largeur size
+    // Projection d'une image de face (front = true) ou de dos, centrée à la hauteur hc, de largeur size (hauteur selon
+    // les proportions de l'image)
     static Color32? Decal(Body b, Vector3 pos, Vector3 n, Img img, bool front, float hc, float size)
     {
         float d = b.Front(pos) - b.depthC;
         if (front ? d <= 0f : d >= 0f) return null;
+        float h = img != null && img.W > 0 ? size * img.H / img.W : size;
         float u = 0.5f + (front ? b.Side(pos) : -b.Side(pos)) / size;
-        float vv = 0.5f + (b.H(pos) - hc) / size;
+        float vv = 0.5f + (b.H(pos) - hc) / h;
         return Sample(img, u, vv);
+    }
+
+    // Gilet jaune (Gilet.cs) : texture peinte sur le t-shirt du jeu dont il est tiré (mêmes coordonnées de texture) —
+    // jaune fluo, deux bandes réfléchissantes autour de la taille, deux bretelles par-dessus les épaules
+    internal static Material GiletMaterial(SkinnedMeshRenderer tee, int submesh)
+    {
+        var fluo = new Color32(212, 242, 24, 255);
+        var silver = new Color32(198, 202, 208, 255);
+        var tex = Bake(tee, submesh, fluo, (b, pos, n, arm, uv) =>
+        {
+            float t = (b.high - b.H(pos)) / Mathf.Max(1e-6f, b.high - b.low);   // 0 en haut, 1 en bas
+            float side = Mathf.Abs(b.Side(pos)) / Mathf.Max(1e-6f, b.halfW);
+            if ((t > 0.56f && t < 0.63f) || (t > 0.76f && t < 0.83f)) return (silver, 2);
+            if (t < 0.56f && side > 0.36f && side < 0.54f) return (silver, 2);
+            byte k = (byte)(Mathf.PerlinNoise(uv.x * 60f, uv.y * 60f) * 14f);
+            return (new Color32((byte)(fluo.r - k), (byte)(fluo.g - k), fluo.b, 255), 1);
+        }, "gilet_jaune");
+        if (tex == null) return null;
+        var m = new Material(Lit(Color.white, 0.3f, 0f)) { name = "DaleMod_gilet_jaune", hideFlags = HideFlags.DontUnloadUnusedAsset };
+        m.SetTexture("_BaseMap", tex);
+        return m;
     }
 
     internal static void AddClothes(PlayerCustomizer c, Il2CppSystem.Collections.Generic.List<CustomizationParameter> ps, GameObject root,
@@ -432,6 +489,24 @@ static class CosmeticExtras
                     ps[shirt].colorItems.Add(ci);
                 }
             }
+
+            // T-shirts imprimés : image entière sur le devant, t-shirt de la couleur du fond de l'image
+            if (ddss != null && tee != null)
+                foreach (var (file, fr, en, bg) in new[]
+                {
+                    ("tshirt_tarm", "Kaiju chat", "Kaiju cat", new Color32(244, 232, 215, 255)),
+                    ("tshirt_tarm_1", "Bouffer en entier", "Swallow whole", new Color32(0, 0, 0, 255)),
+                })
+                {
+                    var img = LoadRgba(file + ".rgba");
+                    if (img == null) continue;
+                    var tex = Bake(tee, SubOf(Item(shirt, "Shirt.002")), bg,
+                        (b, pos, n, arm, uv) => Pick(bg, arm < 0.6f ? Decal(b, pos, n, img, true, b.chest - b.halfW * 0.2f, b.halfW * 1.35f) : null), file);
+                    if (tex == null) continue;
+                    var ci = newColor(root, ps[shirt], ps[shirt].colorItems.Count, T(fr, en), From(ddss.material, tex, file), ddss.strictItems);
+                    colorIcons[ci.Pointer] = "cosmetics/swatch_" + file + ".png";
+                    ps[shirt].colorItems.Add(ci);
+                }
 
             // Cotte de mailles (chemise) : motif uniforme, sans souci des zones de texture partagées ; le tabard de Solaire
             // se met par-dessus (catégorie Manteau)
@@ -545,8 +620,13 @@ static class CosmeticExtras
             {
                 var logo = LoadRgba("carpenter_back.rgba");
                 var dark = new Color32(26, 26, 28, 255);
-                var tex = Bake(hoodie, SubOf(Item(jacket, "Jacket.001")), dark,
-                    (b, pos, n, arm, uv) => Pick(dark, arm < 0.6f ? Decal(b, pos, n, logo, false, b.chest, b.halfW * 1.4f) : null), "hoodie_carpenter");
+                // La capuche repliée occupe le haut du dos (~15 % supérieurs du vêtement) : logo en dessous, rien dessus
+                var tex = Bake(hoodie, SubOf(Item(jacket, "Jacket.001")), dark, (b, pos, n, arm, uv) =>
+                {
+                    float hoodLine = b.high - (b.high - b.low) * 0.22f, size = b.halfW * 1.25f;
+                    if (arm >= 0.6f || b.H(pos) > hoodLine) return (dark, 0);
+                    return Pick(dark, Decal(b, pos, n, logo, false, Mathf.Min(b.chest, hoodLine - size * 0.55f), size));
+                }, "hoodie_carpenter_v2");
                 if (tex != null)
                 {
                     var strict = new Il2CppSystem.Collections.Generic.List<CustomizationItem>();
