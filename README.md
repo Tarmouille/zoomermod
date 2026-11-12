@@ -176,6 +176,7 @@ sans le mod, le personnage revient à ses objets d'origine.
 - **Lunettes** : lunettes 3D, monocle. **Yeux** : UwU.
 - **Barbe** : moustache ronde. **Accessoire** : nez rouge, masque de Glucks. **Crâne** : crâne raboté.
 - **Manteau** : peignoir (léopard, éponge, Lebowski, cuir…), tabard de Solaire.
+- **Veste** (manager) : doudoune sans manches, fermée ou ouverte, noire ou bleu marine.
 - **Couleurs** : chemise des tests, léopard, cotte de mailles, Noël, t-shirt noir au logo, t-shirts « Kaiju chat », « Bouffer en entier » et Pingu, hoodie Carpenter.
 
 ## Effets et événements

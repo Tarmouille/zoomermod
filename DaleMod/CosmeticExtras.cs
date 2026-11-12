@@ -308,7 +308,7 @@ static class CosmeticExtras
     }
 
     // Repère du vêtement (espace de référence du maillage, comme le peignoir)
-    sealed class Body
+    internal sealed class Body
     {
         public Vector3 up, fwd, right, axis;
         public float chest, upper, halfW, depthC, low, high;
@@ -332,16 +332,17 @@ static class CosmeticExtras
 
     static readonly Dictionary<string, Texture2D> baked = new();
 
-    static Texture2D Bake(SkinnedMeshRenderer smr, int submesh, Color32 background, Painter paint, string key)
+    // Repère du vêtement et part des bras de chaque sommet (null si os manquants)
+    internal static Body Frame(SkinnedMeshRenderer smr, out Func<int, float> armOf)
     {
-        if (baked.TryGetValue(key, out var done) && done != null) return done;
+        armOf = null;
         var mesh = smr.sharedMesh;
         var bones = smr.bones;
         Matrix4x4[] bind = mesh.bindposes;
         int Bone(string n) { for (int i = 0; i < bones.Length; i++) if (bones[i] != null && bones[i].name == n) return i; return -1; }
         Vector3 P(int i) => bind[i].inverse.MultiplyPoint3x4(Vector3.zero);
         int spine = Bone("spine"), spine2 = Bone("spine.002"), spine3 = Bone("spine.003"), head = Bone("head"), footL = Bone("foot.L"), toeL = Bone("toe.L");
-        if (spine < 0 || spine2 < 0 || spine3 < 0 || head < 0) { Plugin.L.LogWarning("[COSMETIC] os manquants pour peindre " + key); return null; }
+        if (spine < 0 || spine2 < 0 || spine3 < 0 || head < 0) return null;
         var b = new Body { axis = P(spine), up = (P(head) - P(spine)).normalized };
         var fwd = footL >= 0 && toeL >= 0 ? P(toeL) - P(footL) : Vector3.forward;
         b.fwd = (fwd - b.up * Vector3.Dot(fwd, b.up)).normalized;
@@ -357,7 +358,6 @@ static class CosmeticExtras
         foreach (var n in new[] { "upper_arm.L", "upper_arm.R", "forearm.L", "forearm.R", "hand.L", "hand.R" })   // pas les épaules : le haut du torse leur est lié
         { int k = Bone(n); if (k >= 0) armBones.Add(k); }
         Vector3[] v = mesh.vertices;
-        Vector2[] uv = mesh.uv;
         BoneWeight[] w = mesh.boneWeights;
         float Arm(int i)
         {
@@ -388,6 +388,18 @@ static class CosmeticExtras
             int k = Mathf.Clamp((int)((b.H(v[i0]) - b.low) / Mathf.Max(1e-9f, b.high - b.low) * 16), 0, 15);
             b.widths[k] = Mathf.Max(b.widths[k], Mathf.Abs(b.Side(v[i0])));
         }
+        armOf = Arm;
+        return b;
+    }
+
+    static Texture2D Bake(SkinnedMeshRenderer smr, int submesh, Color32 background, Painter paint, string key)
+    {
+        if (baked.TryGetValue(key, out var done) && done != null) return done;
+        var mesh = smr.sharedMesh;
+        var b = Frame(smr, out var Arm);
+        if (b == null) { Plugin.L.LogWarning("[COSMETIC] os manquants pour peindre " + key); return null; }
+        Vector3[] v = mesh.vertices;
+        Vector2[] uv = mesh.uv;
 
         var tri = RobeCut.TrianglesOf(mesh, submesh);
         if (tri == null) { Plugin.L.LogWarning("[COSMETIC] triangles illisibles pour " + key); return null; }

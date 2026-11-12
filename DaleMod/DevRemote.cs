@@ -11,7 +11,8 @@ namespace DaleMod;
 
 // Debug seulement : commandes lues dans BepInEx/dalemod_cmd.txt (une par ligne, fichier supprimé après lecture), pour
 // régler les cosmétiques sans toucher au jeu :
-//   set <catégorie> <modèle> <couleur>   change l'apparence du personnage d'aperçu (menu)
+//   set <catégorie> <modèle> <couleur> [manager]   change l'apparence du personnage d'aperçu (menu)
+//   size <corpulence 0..1> [manager]
 //   face <nom> [distance] [angle]         photo du visage -> BepInEx/shots/<nom>.png
 //   body <nom> [angle]                    photo du corps entier
 //   shot <nom>                            capture d'écran complète
@@ -125,7 +126,7 @@ static class DevRemote
                 if (string.IsNullOrEmpty(current) && c.playerCustomization != null) current = c.playerCustomization.ToJson();
                 var pc = PlayerCustomization.FromJson(current);
                 pc.bodySize = float.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture);
-                c.Customize(pc, Player.Lobby.PlayerRole.Specialist, false, false);
+                c.Customize(pc, p.Length > 2 && p[2] == "manager" ? Player.Lobby.PlayerRole.Manager : Player.Lobby.PlayerRole.Specialist, false, false);
                 current = pc.ToJson();
                 return "corpulence " + pc.bodySize;
             }

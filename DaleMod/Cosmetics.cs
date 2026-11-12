@@ -15,6 +15,8 @@ namespace DaleMod;
 // - Barbe : "Moustache ronde" (guidon qui s'enroule + petit bouc), rigide, plaquée sur le visage, couleur des cheveux.
 // - Nouvelle catégorie "Accessoire" (13e) : "Nez rouge", "Masque de Glucks" (FaceGear.cs).
 // - Lunettes : lunettes 3D, monocle ; Yeux : UwU (FaceGear.cs). Manteau : peignoir, tabard.
+// - Veste (manager) : doudoune sans manches, fermée ou ouverte, deux couleurs réservées (Doudoune.cs) ; les couleurs
+//   de la veste du jeu sont masquées dans l'écran quand elle est choisie.
 // - Chemise : "Chemise des tests" (motif) ; Chemise, Pantalon, Veste : "Léopard" (le peignoir = chemise + jupe léopard).
 // Sauvegarde : le disque ne contient JAMAIS rien du mod. À l'écriture d'une apparence dans les préférences du jeu, on
 // écrit une version nettoyée (objets du jeu seulement) et on garde la version complète dans notre fichier ; à la lecture,
@@ -159,6 +161,31 @@ static class Cosmetics
                 }
             coat.colorParameters = new Il2CppSystem.Collections.Generic.List<ColorParameter>();
             if (robe != null) ps.Add(coat);
+
+            // Doudoune sans manches (catégorie Veste : manager seulement), noire ou bleu marine, fermée ou ouverte
+            CustomizationItem teeItem = null;
+            if (shirt >= 0) foreach (var x in ps[shirt].customizationItems) if (x != null && x.gameObject.name == Doudoune.Source) teeItem = x;
+            if (jacket >= 0 && teeItem != null)
+            {
+                var vests = new Il2CppSystem.Collections.Generic.List<CustomizationItem>();
+                foreach (bool open in new[] { false, true })
+                {
+                    var d = Doudoune.NewItem(c, ps[jacket], ps[jacket].customizationItems.Count, teeItem.colorIndexInRenderer, Doudoune.Prefix + (open ? "Ouverte" : ""), open);
+                    if (d == null) continue;
+                    ps[jacket].customizationItems.Add(d);
+                    vests.Add(d);
+                    itemIcons[d.Pointer] = open ? "icon_doudoune_ouverte.png" : "icon_doudoune.png";
+                    itemNames[d.Pointer] = open ? T("Doudoune ouverte", "Open puffer vest") : T("Doudoune sans manches", "Puffer vest");
+                }
+                if (vests.Count > 0)
+                    foreach (var (fr, en, col) in Doudoune.Colors)
+                    {
+                        var x = NewColor(root, ps[jacket], ps[jacket].colorItems.Count, T(fr, en), Doudoune.Material(col), vests);
+                        colorIcons[x.Pointer] = $"cosmetics/swatch_doudoune_{col.r}_{col.g}_{col.b}.png";
+                        vestColors.Add(x.Pointer);
+                        ps[jacket].colorItems.Add(x);
+                    }
+            }
 
             // 2e lot : chapeaux (sombrero, viking, Solaire) et vêtements peints (t-shirt au logo, Solaire, hoodie)
             if (hat >= 0) CosmeticExtras.AddHats(c, ps[hat], head, itemIcons, itemNames);
@@ -572,6 +599,7 @@ static class Cosmetics
         long t0 = Perf.Start();
         try { placedFor.Remove(__instance.Pointer); Place(__instance); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] placement : " + e); }
         try { HideJacketUnderRobe(__instance); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] veste : " + e); }
+        try { FixVestColor(__instance); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] doudoune : " + e); }
         try { var hb = Bone(__instance, "head"); if (hb != null) CosmeticExtras.HideFaceUnderHelmet(__instance, hb); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] casque : " + e); }
         try { var hb = Bone(__instance, "head"); if (hb != null) FaceGear.HideUnderMask(__instance, hb); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] masque : " + e); }
         try { var hb = Bone(__instance, "head"); if (hb != null) SkullCut.Apply(__instance, hb); } catch (Exception e) { Plugin.L.LogError("[COSMETIC] crâne : " + e); }
@@ -603,10 +631,10 @@ static class Cosmetics
         var robe = FindDeep(c.transform, Robe.Name);
         if (robe == null || !robe.gameObject.activeSelf) return;
         foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(false))
-            if (r.name.StartsWith("Jacket") && r.gameObject.activeSelf) r.gameObject.SetActive(false);
+            if ((r.name.StartsWith("Jacket") || r.name.StartsWith(Doudoune.Prefix)) && r.gameObject.activeSelf) r.gameObject.SetActive(false);
     }
 
-    static bool IsOurs(MeshDeform d) => d != null && d.gameObject.name.StartsWith("DaleMod_") && d.gameObject.name != Robe.Name;
+    static bool IsOurs(MeshDeform d) => d != null && d.gameObject.name.StartsWith("DaleMod_") && d.gameObject.name != Robe.Name && !d.gameObject.name.StartsWith(Doudoune.Prefix);
 
     // Vérification du jeu (arrivée en partie, réseau) : réglée sur ses 12 catégories, elle supprime les nôtres. On les
     // met de côté avant et on les remet après.
@@ -667,6 +695,46 @@ static class Cosmetics
     [HarmonyPrefix]
     static void BeforeCategory(NewCustomizeTab __instance) => EnsureTab(__instance);
 
+    // Nos catégories et nos objets en plus : la colonne des catégories et la grille des objets dépassaient de leur
+    // cadre (comme les couleurs des chemises). On réduit les cases juste ce qu'il faut pour que tout tienne (à chaque image : le jeu remplace les cases
+    // d'une catégorie à l'autre, les anciennes ne disparaissent qu'à la fin de l'image).
+    [HarmonyPatch(typeof(NewCustomizeTab), nameof(NewCustomizeTab.Update))]
+    [HarmonyPostfix]
+    static void AfterTabUpdate(NewCustomizeTab __instance)
+    {
+        try
+        {
+            if (__instance.categoryGrid != null) Fit(__instance.categoryGrid.GetComponent<UnityEngine.UI.GridLayoutGroup>());
+            if (__instance.itemGrid != null) Fit(__instance.itemGrid.GetComponent<UnityEngine.UI.GridLayoutGroup>());
+            if (__instance.colorItemGrid != null) { HideOtherVestColors(__instance); Fit(__instance.colorItemGrid.GetComponent<UnityEngine.UI.GridLayoutGroup>()); }
+        }
+        catch (Exception e) { Plugin.L.LogError("[COSMETIC] mise en page : " + e); }
+    }
+
+    static readonly Dictionary<IntPtr, (Vector2 cell, Vector2 spacing)> gridBase = new();
+
+    static void Fit(UnityEngine.UI.GridLayoutGroup g)
+    {
+        if (g == null) return;
+        if (!gridBase.TryGetValue(g.Pointer, out var b0)) gridBase[g.Pointer] = b0 = (g.cellSize, g.spacing);
+        int n = 0;
+        for (int i = 0; i < g.transform.childCount; i++) if (g.transform.GetChild(i).gameObject.activeSelf) n++;
+        var rt = g.GetComponent<RectTransform>();
+        float availH = rt.rect.height - g.padding.top - g.padding.bottom;
+        float availW = rt.rect.width - g.padding.left - g.padding.right;
+        if (n == 0 || availH <= 1f || availW <= 1f) return;
+        float scale = 1f;
+        for (; scale > 0.5f; scale -= 0.01f)
+        {
+            var cell = b0.cell * scale; var sp = b0.spacing * scale;
+            int cols = Mathf.Max(1, Mathf.FloorToInt((availW + sp.x) / (cell.x + sp.x) + 0.001f));
+            int rows = Mathf.CeilToInt(n / (float)cols);
+            if (rows * cell.y + (rows - 1) * sp.y <= availH + 0.5f) break;
+        }
+        var want = b0.cell * scale;
+        if ((g.cellSize - want).sqrMagnitude > 0.01f) { g.cellSize = want; g.spacing = b0.spacing * scale; }
+    }
+
     static void EnsureTab(NewCustomizeTab tab)
     {
         try
@@ -696,10 +764,61 @@ static class Cosmetics
         if (__instance.priceText != null) __instance.priceText.text = "";
     }
 
+    // Doudoune : seuls ses deux coloris dans la liste des couleurs (les couleurs de la veste du jeu ne valent pas pour elle)
+    static readonly HashSet<IntPtr> vestColors = new();
+
+    // Bouton de couleur de l'écran -> sa couleur
+    static readonly Dictionary<IntPtr, IntPtr> colorOfButton = new();
+
+    // Catégorie Veste ouverte et doudoune portée par l'aperçu : seules ses deux couleurs restent dans la liste
+    static void HideOtherVestColors(NewCustomizeTab tab)
+    {
+        // selectedCategoryIndex est le numéro de la catégorie (Veste = 5), pas son rang dans la liste
+        var ps = tab.parameters;
+        int ci = tab.selectedCategoryIndex;
+        CustomizationParameter cat = null;
+        if (ps != null) foreach (var p in ps) if (p != null && IdOf(p) == ci) { cat = p; break; }
+        if (cat?.parameterName != "Jacket") return;
+        bool vest = false;
+        var c = tab.playerCustomizer;
+        if (c != null)
+            foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(false))
+                if (r.name.StartsWith(Doudoune.Prefix) && r.gameObject.activeInHierarchy) { vest = true; break; }
+        if (!vest) return;
+        var grid = tab.colorItemGrid;
+        int hidden = 0;
+        for (int i = 0; i < grid.childCount; i++)
+        {
+            var ch = grid.GetChild(i);
+            if (!ch.gameObject.activeSelf) continue;
+            var b = ch.GetComponent<CustomizationColorItem>();
+            if (b == null || !colorOfButton.TryGetValue(b.Pointer, out var col) || vestColors.Contains(col)) continue;
+            ch.gameObject.SetActive(false);
+            hidden++;
+        }
+        if (hidden > 0 && !vestLogged) { vestLogged = true; Plugin.L.LogInfo($"[COSMETIC] doudoune : {hidden} couleurs de la veste du jeu masquées"); }
+    }
+
+    static bool vestLogged;
+
+    // Doudoune arrivée avec une couleur du jeu (changement de modèle, tirage au hasard, autre joueur) : noire
+    static void FixVestColor(PlayerCustomizer c)
+    {
+        foreach (var r in c.GetComponentsInChildren<SkinnedMeshRenderer>(false))
+        {
+            if (!r.name.StartsWith(Doudoune.Prefix)) continue;
+            var mats = r.sharedMaterials;
+            if (mats.Length == 0 || Doudoune.IsVestMaterial(mats[0])) continue;
+            mats[0] = Doudoune.Material(Doudoune.Colors[0].col);
+            r.sharedMaterials = mats;
+        }
+    }
+
     [HarmonyPatch(typeof(CustomizationColorItem), nameof(CustomizationColorItem.SetItem))]
     [HarmonyPostfix]
     static void AfterSetColor(CustomizationColorItem __instance, ColorItem colorItem)
     {
+        if (colorItem != null) colorOfButton[__instance.Pointer] = colorItem.Pointer;
         if (colorItem == null || !colorIcons.TryGetValue(colorItem.Pointer, out var icon)) return;
         var sp = ModAssets.LoadSprite(icon);
         if (__instance.colorMeshRenderer != null && sp != null) { __instance.colorMeshRenderer.sprite = sp; __instance.colorMeshRenderer.color = Color.white; }
