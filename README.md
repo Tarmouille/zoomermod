@@ -12,8 +12,13 @@ Ce mod est **vibe codé** : écrit en grande partie avec une IA (Claude), testé
 
 1. Télécharge le zip de la dernière version dans [Releases](../../releases).
 2. Steam > clic droit sur Dale & Dawson > Gérer > Parcourir les fichiers locaux.
-3. Dézippe **tout** le contenu du zip dans ce dossier (à côté de `DDSS.exe`).
-4. Lance le jeu depuis Steam. Le premier lancement est long (1 à 3 minutes).
+3. Dézippe **tout** le contenu du zip dans ce dossier (à côté de `DDSS.exe`). Si Windows demande de remplacer des fichiers, accepte.
+   Le dossier doit ressembler à ça (avec en plus les fichiers `ZoomerMod ON.bat` et `ZoomerMod OFF.bat`) :
+
+   <img src="docs/tuto.png" alt="Dossier du jeu après installation" width="650">
+
+4. Double-clique sur **`ZoomerMod ON.bat`** (dans ce même dossier) pour activer le mod. Le jeu doit être fermé.
+5. Lance le jeu depuis Steam. Le premier lancement est long (1 à 3 minutes).
 
 Si tout marche, `ZoomerMod vX.Y.Z` s'affiche en bas à droite du menu principal.
 Tout le monde dans la partie doit avoir la même version. **Joue uniquement en lobby privé, avec des gens qui ont le mod.**
