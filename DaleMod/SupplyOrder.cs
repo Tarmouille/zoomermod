@@ -370,10 +370,21 @@ static class SupplyOrder
         foreach (var ch in Object.FindObjectsOfType<Chair>()) seats.Add(ch.transform.position);
         foreach (var ch in Object.FindObjectsOfType<ReceptionChair>()) seats.Add(ch.transform.position);
         float top = rb?.max.y ?? center.y + 2f;
+        // Sol de la pièce : sous la chaise (ou le tableau)
+        float floorY = Physics.Raycast(chair.transform.position + Vector3.up * 0.5f, Vector3.down, out var fh, 3f, ~0, QueryTriggerInteraction.Ignore)
+            ? fh.point.y : chair.transform.position.y;
+        var eye = new Vector3(chair.transform.position.x, floorY + 1.7f, chair.transform.position.z);
         foreach (var c in candidates)
         {
             if (!Physics.Raycast(new Vector3(c.x, top - 0.1f, c.z), Vector3.down, out var hit, 6f, ~0, QueryTriggerInteraction.Ignore)) continue;
             if (hit.normal.y < 0.9f) continue;                                                   // pas un sol
+            // Le rectangle de la pièce peut déborder hors du bâtiment (Springfield) : dans la pièce, au niveau de son sol,
+            // et visible depuis la chaise / le tableau (pas de mur entre les deux)
+            if (room != null && !InRoom(room, hit.point + Vector3.up * 0.5f)) continue;
+            if (Mathf.Abs(hit.point.y - floorY) > 0.4f) continue;
+            // (tracé depuis le point : le tableau est contre un mur, un obstacle tout près de lui ne compte pas)
+            if (Physics.Linecast(hit.point + Vector3.up * 1.7f, eye, out var wall, ~0, QueryTriggerInteraction.Ignore)
+                && Vector3.Distance(wall.point, eye) > 0.8f && wall.collider.GetComponentInParent<PlayerController>() == null) continue;
             if (Vector3.Distance(new Vector3(hit.point.x, 0, hit.point.z), new Vector3(chair.transform.position.x, 0, chair.transform.position.z)) < ChairClearance) continue;
             if (NearSeat(hit.point, seats)) continue;                                                    // pas contre une chaise
             if (Blocked(hit.point + Vector3.up * 0.45f, new Vector3(0.45f, 0.4f, 0.45f))) continue;   // murs, guichet, meubles
