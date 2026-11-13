@@ -67,6 +67,7 @@ public class DebugMenu : MonoBehaviour
         Perf.Run("NAP", () => { PowerNap.Tick(); });
         Perf.Run("CHAIN", () => { ChainMail.Tick(); });
         Perf.Run("ROLES", () => { RoleKit.Tick(); });
+        Perf.Run("AUDIO", () => { ModAudio.Tick(); });
         Perf.Run("USURP", () => { Usurpateur.Tick(); });
         Perf.Run("CHANTEUR", () => { MaitreChanteur.Tick(); });
         Perf.Run("COSTKILLER", () => { CostKiller.Tick(); });

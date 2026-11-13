@@ -20,7 +20,9 @@ namespace DaleMod;
 //   Il apparaît sur le PC du joueur qui a la tâche, et de temps en temps au hasard sur un PC, comme les autres documents.
 //   Le serveur décide et prévient tout le monde (l'icône doit exister chez chacun : les clics du PC sont rejoués partout).
 // - Impression : bouton Print du bloc-notes (imprimante du jeu), depuis mon PC. Dépôt : n'importe quel tract que j'ai eu
-//   en main, peu importe qui l'a imprimé (deux joueurs avec la tâche ne se gênent plus à l'imprimante).
+//   en main, peu importe qui l'a imprimé (deux joueurs avec la tâche ne se gênent plus à l'imprimante). Le dépôt est
+//   surtout repéré par le hook du jeu "Placed Document -> PaperTray" (déclenché chez celui qui pose) : on cherche
+//   alors un tract dans un bac ; "tenu en main" (usingPlayerController) n'est plus qu'une seconde voie.
 static class UnionFlyer
 {
     internal const string Key = "dalemod.macronExplosion";
@@ -129,7 +131,21 @@ static class UnionFlyer
     static readonly HashSet<uint> carried = new(), counted = new();
     static readonly HashSet<IntPtr> usedTrays = new();
     static bool iconAsked;
-    static float nextRandom = -1f, nextPoll;
+    static float nextRandom = -1f, nextPoll, placedUntil = -1f;
+
+    // Le jeu signale le dépôt d'un document dans un bac (chez le joueur qui le pose) : on vérifie juste après
+    [HarmonyPatch(typeof(TaskHook), nameof(TaskHook.TriggerTaskHookCommandStatic))]
+    [HarmonyPrefix]
+    static void OnHook(TaskHook taskHook)
+    {
+        if (taskHook == null || taskHook.action != "Placed" || taskHook.location != "PaperTray") return;
+        if (taskHook.passiveObjectName != "Document" || !TaskActive()) return;
+        placedUntil = Time.time + 1.5f;
+    }
+
+    static bool IsFlyer(Document doc) =>
+        doc != null && doc.TryCast<PrintedImage>() == null
+        && ((doc.text ?? "").Contains(Marker) || (doc.contentText != null && (doc.contentText.text ?? "").Contains(Marker)));
 
     internal static void Tick()
     {
@@ -169,28 +185,50 @@ static class UnionFlyer
         // N'importe quel tract que j'ai eu en main (peu importe qui l'a imprimé), puis déposé dans le bac d'un autre poste
         var myLobby = LobbyManager.instance?.GetLocalPlayer()?.netIdentity;
         var me = NetworkClient.localPlayer?.GetComponent<Player.PlayerController>();
+        bool justPlaced = placedUntil > 0f;
         PaperTray[] trays = null;
-        foreach (var doc in Object.FindObjectsOfType<Document>())
+        var docs = Object.FindObjectsOfType<Document>();
+        foreach (var doc in docs)
         {
-            if (doc.TryCast<PrintedImage>() != null || !(doc.text ?? "").Contains(Marker)) continue;
+            if (!IsFlyer(doc)) continue;
             var holder = doc.usingPlayerController;
             if (holder != null)
             {
                 if (me != null && holder.Pointer == me.Pointer && carried.Add(doc.netId)) Plugin.L.LogInfo("[TRACT] tract en main");
                 continue;
             }
-            if (!carried.Contains(doc.netId) || counted.Contains(doc.netId) || delivered >= Needed) continue;
+            if ((!justPlaced && !carried.Contains(doc.netId)) || counted.Contains(doc.netId) || delivered >= Needed) continue;
             trays ??= Object.FindObjectsOfType<PaperTray>();
             var tray = TrayOf(doc, trays);
             if (tray == null) continue;
             if (tray.lobbyPlayerOwner != null && myLobby != null && tray.lobbyPlayerOwner == myLobby) continue;   // pas son propre bac
-            if (!usedTrays.Add(tray.Pointer)) continue;   // 3 bacs différents
+            if (usedTrays.Contains(tray.Pointer)) continue;   // 3 bacs différents
+            usedTrays.Add(tray.Pointer);
             counted.Add(doc.netId);
             delivered++;
+            placedUntil = -1f;
             TaskHook.TriggerTaskHookCommandStatic(new TaskHook(null, FlyerObj, null, DeliveredAction, null, null));
             Plugin.L.LogInfo($"[TRACT] tract déposé dans le bac de {(tray.lobbyPlayerOwner == null ? "un bureau vide" : tray.lobbyPlayerOwner.name)} ({delivered}/{Needed})");
+            return;
+        }
+        if (justPlaced && Time.time > placedUntil)
+        {
+            // Dépôt signalé par le jeu, mais aucun tract compté : de quoi comprendre pourquoi
+            placedUntil = -1f;
+            trays ??= Object.FindObjectsOfType<PaperTray>();
+            foreach (var doc in docs)
+            {
+                var tray = TrayOf(doc, trays);
+                if (tray == null) continue;
+                string txt = Short(doc.text), shown = Short(doc.contentText?.text);
+                Plugin.L.LogInfo($"[TRACT] document dans un bac ({(tray.lobbyPlayerOwner == null ? "bureau vide" : tray.lobbyPlayerOwner.name)}) : tract {IsFlyer(doc)}, " +
+                                 $"déjà compté {counted.Contains(doc.netId)}, bac déjà servi {usedTrays.Contains(tray.Pointer)}, mon bac {tray.lobbyPlayerOwner != null && tray.lobbyPlayerOwner == myLobby}, " +
+                                 $"texte '{txt}', affiché '{shown}'");
+            }
         }
     }
+
+    static string Short(string s) => s == null ? "" : s.Substring(0, Math.Min(40, s.Length)).Replace('\n', ' ');
 
     static PaperTray TrayOf(Document doc, PaperTray[] trays)
     {

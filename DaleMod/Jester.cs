@@ -108,8 +108,31 @@ static class Jester
     internal static bool IsJester(uint netId) => netId != 0 && jesters.Exists(j => j.Id == netId && !j.Failed);
     internal static bool? OutcomeOf(uint netId) => jesters.Find(j => j.Id == netId)?.Won;
 
+    // Minuteur de licenciement du manager : le vrai renvoi (sauté pour le Jester) le relance. Sens du décompte appris
+    // en l'observant (il est à l'arrêt pendant les réunions, où le Jester se fait virer) : +1 monte, -1 descend.
+    static float lastTimer = float.NaN;
+    static int timerDir;
+
+    static void WatchTimer(GameManager gm)
+    {
+        float t = gm.terminationTimer;
+        if (!float.IsNaN(lastTimer) && Mathf.Abs(t - lastTimer) > 1e-4f && Mathf.Abs(t - lastTimer) < 1f) timerDir = t > lastTimer ? 1 : -1;
+        lastTimer = t;
+    }
+
+    static void ResetTimer(GameManager gm)
+    {
+        float before = gm.terminationTimer, reset = timerDir > 0 ? 0f : gm.terminationMaxTime;
+        if (timerDir == 0) Plugin.L.LogWarning("[JESTER] sens du minuteur inconnu : supposé décroissant");
+        gm.terminationTimer = reset;
+        gm.RpcResetTerminationTimer(reset);
+        lastTimer = float.NaN;
+        Plugin.L.LogInfo($"[JESTER] minuteur de licenciement relancé : {before:0.0} -> {reset:0.0} (max {gm.terminationMaxTime:0.0}, sens {timerDir})");
+    }
+
     static void ServerTick(GameManager gm)
     {
+        try { WatchTimer(gm); } catch { }
         foreach (var j in jesters)
         {
             // Devenu manager (vote de remplacement) : il ne peut plus se faire virer, mission ratée
@@ -187,8 +210,9 @@ static class Jester
             j.JanitorAt = Time.time + JanitorDelay;
         }
         catch (Exception e) { Plugin.L.LogError("[JESTER] renvoi : " + e); }
-        // Ce que le vrai renvoi fait aussi (on l'a sauté) : comptes des équipes, fin de la réunion
+        // Ce que le vrai renvoi fait aussi (on l'a sauté) : comptes des équipes, minuteur du manager, fin de la réunion
         try { __instance.latestFiredPlayer = lp; __instance.UpdateRolesLeft(); } catch (Exception e) { Plugin.L.LogWarning("[JESTER] équipes : " + e.Message); }
+        try { ResetTimer(__instance); } catch (Exception e) { Plugin.L.LogError("[JESTER] minuteur : " + e); }
         try { if (__instance.IsState(GameStates.Meeting)) { __instance.ServerFinnishMeeting(); Plugin.L.LogInfo("[JESTER] réunion terminée"); } }
         catch (Exception e) { Plugin.L.LogError("[JESTER] fin de réunion : " + e); }
         NetSignal.SendToPlayer(RoleKit.PlayerIdOf(lp), WonSignal);
