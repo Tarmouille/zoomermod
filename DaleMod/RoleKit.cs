@@ -109,6 +109,7 @@ static class RoleKit
     static void ServerTick(GameManager gm)
     {
         Meetings.ServerTick(gm);
+        ManagerTimer.Watch(gm);
         foreach (var r in Roles) try { r.ServerTick?.Invoke(gm); } catch (Exception e) { Plugin.L.LogError($"[ROLES] {r.Name} : {e}"); }
         if (gm.IsState(GameStates.WaitingForPlayerConnections))
         {

@@ -152,7 +152,8 @@ static class Pistonne
         Plugin.L.LogInfo($"[PISTONNE] minuteur de licenciement avant fin de réunion : {__instance.terminationTimer:0.0} / {__instance.terminationMaxTime:0.0}");
         try { if (__instance.IsState(GameStates.Meeting)) __instance.ServerFinnishMeeting(); }
         catch (Exception e) { Plugin.L.LogError("[PISTONNE] fin de réunion : " + e); }
-        Plugin.L.LogInfo($"[PISTONNE] renvoi du Pistonné bloqué ; minuteur après : {__instance.terminationTimer:0.0}");
+        // Renvoi bloqué, mais le manager a bien viré quelqu'un : son minuteur repart comme après un vrai renvoi
+        ManagerTimer.Reset(__instance, "Pistonné sauvé");
         return false;
     }
 
