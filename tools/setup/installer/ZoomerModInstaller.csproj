@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Installeur ZoomerMod : un seul .exe, pour le .NET Framework 4.8 déjà présent dans Windows (rien à installer).
+       Le zip du mod est embarqué (PayloadZip, passé par tools\package.ps1). -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>ZoomerMod-Installer</AssemblyName>
+    <RootNamespace>ZoomerModInstaller</RootNamespace>
+    <ApplicationIcon Condition="Exists('zoomer.ico')">zoomer.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ModVersion Condition="'$(ModVersion)' == ''">0.0.0</ModVersion>
+    <InformationalVersion>$(ModVersion)</InformationalVersion>
+    <Product>ZoomerMod</Product>
+    <Description>Installeur de ZoomerMod pour Dale &amp; Dawson</Description>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <EmbeddedResource Include="$(PayloadZip)" LogicalName="payload.zip" Condition="'$(PayloadZip)' != ''" />
+  </ItemGroup>
+</Project>

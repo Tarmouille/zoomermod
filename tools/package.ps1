@@ -1,6 +1,7 @@
-﻿# Package ZoomerMod pour les amis : BepInEx + le mod en Release (sans menu F7), prêt à dézipper dans le dossier du jeu.
+﻿# Package ZoomerMod pour les amis : BepInEx + le mod en Release (sans menu F7).
 # Usage : powershell -ExecutionPolicy Bypass -File tools\package.ps1
-# Résultat : dist\ZoomerMod-<version>.zip
+# Résultat : dist\ZoomerMod-<version>.zip (à dézipper n'importe où puis "Installer ZoomerMod.bat", ou directement
+# dans le dossier du jeu) et dist\ZoomerMod-<version>-Installer.exe (le même zip embarqué, avec une fenêtre).
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $game = "C:\Program Files (x86)\Steam\steamapps\common\Dale&Dawson"
@@ -43,8 +44,9 @@ $cfg = foreach ($line in $cfg) {
 }
 Set-Content (Join-Path $bep "config\BepInEx.cfg") $cfg -Encoding utf8
 
-# Le mod
+# Le mod (+ sa version, lue par les installeurs)
 Copy-Item $dll (Join-Path $bep "plugins\DaleMod")
+Set-Content (Join-Path $bep "plugins\DaleMod\version.txt") $version -Encoding ascii
 # Assets, sous-dossiers compris (karaoke\, popups\…), sans les .mp3 d'origine
 $assets = Join-Path $mod "Assets"
 Get-ChildItem $assets -File -Recurse | Where-Object { $_.Extension -ne ".mp3" } | ForEach-Object {
@@ -71,16 +73,31 @@ pause
 "@ | Set-Content (Join-Path $stage $s.File) -Encoding ascii
 }
 
+# Installation depuis n'importe quel dossier : script commun + deux raccourcis (une seule ligne de commande : le
+# désinstalleur peut se supprimer lui-même pendant qu'il tourne)
+Copy-Item (Join-Path $PSScriptRoot "setup\ZoomerMod-Setup.ps1") $stage
+foreach ($s in @(@{ File = "Installer ZoomerMod.bat"; Action = "install" }, @{ File = "Desinstaller ZoomerMod.bat"; Action = "uninstall" })) {
+@"
+@echo off
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0ZoomerMod-Setup.ps1" $($s.Action) & pause & exit /b
+"@ | Set-Content (Join-Path $stage $s.File) -Encoding ascii
+}
+
 # Notice
 @"
 ZoomerMod v$version pour Dale & Dawson
 =====================================
 
-INSTALLATION
-1. Steam > clic droit sur Dale & Dawson > Gérer > Parcourir les fichiers locaux.
-2. Dézippe TOUT le contenu de ce zip dans ce dossier (à côté de DDSS.exe).
-   Si Windows demande de remplacer des fichiers, accepte.
-3. Lance le jeu depuis Steam, comme d'habitude.
+INSTALLATION (au choix)
+A. Le plus simple : ZoomerMod-$version-Installer.exe (sur la page de la release), puis "Installer".
+   Windows peut afficher "Windows a protégé votre ordinateur" (installeur non signé) :
+   "Informations complémentaires" puis "Exécuter quand même".
+B. Avec ce zip, depuis n'importe quel dossier : extrais TOUT le zip, puis double-clique sur "Installer ZoomerMod.bat".
+   Il trouve le jeu tout seul (via Steam) et y copie le mod.
+C. À la main : Steam > clic droit sur Dale & Dawson > Gérer > Parcourir les fichiers locaux, dézippe TOUT le contenu
+   de ce zip dans ce dossier (à côté de DDSS.exe), accepte de remplacer les fichiers, puis double-clique sur
+   "ZoomerMod ON.bat".
+Ensuite, lance le jeu depuis Steam, comme d'habitude. Le jeu doit être fermé pendant l'installation.
 
 Le PREMIER lancement est long (1 à 3 minutes, écran noir possible) : le mod prépare ses fichiers.
 C'est normal, ne ferme pas le jeu. Les lancements suivants sont rapides.
@@ -99,8 +116,10 @@ EN CAS DE PROBLÈME
 Envoie le fichier BepInEx\LogOutput.log (dans le dossier du jeu).
 
 DÉSINSTALLER
-Supprime winhttp.dll du dossier du jeu (le jeu redevient normal). Pour tout enlever : supprime aussi
-doorstop_config.ini, .doorstop_version, les deux fichiers "ZoomerMod ON/OFF.bat", et les dossiers BepInEx et dotnet.
+Bouton "Désinstaller" de l'installeur .exe, ou "Desinstaller ZoomerMod.bat". À la main : supprime winhttp.dll du
+dossier du jeu (le jeu redevient normal) ; pour tout enlever, supprime aussi doorstop_config.ini, .doorstop_version,
+les fichiers "ZoomerMod ON/OFF.bat", "Installer/Desinstaller ZoomerMod.bat", ZoomerMod-Setup.ps1, LISEZ-MOI.txt,
+et les dossiers BepInEx et dotnet.
 
 Crédits : musique du karaoké "Rise of the Machines", Music by Karl Casey @ White Bat Audio ;
 sniff.wav par spookymodem (CC-BY 3.0). Voir BepInEx\plugins\DaleMod\Assets\CREDITS.txt
@@ -122,3 +141,11 @@ $z = [IO.Compression.ZipFile]::OpenRead($zip); $entries = $z.Entries.FullName; $
 if (-not ($entries -contains ".doorstop_version")) { Write-Warning ".doorstop_version absent du zip" }
 Remove-Item $stage -Recurse -Force
 "{0} ({1:N1} Mo, {2} fichiers)" -f $zip, ((Get-Item $zip).Length / 1MB), $entries.Count
+
+# 4. Installeur .exe : le zip embarqué
+$inst = Join-Path $PSScriptRoot "setup\installer"
+dotnet build (Join-Path $inst "ZoomerModInstaller.csproj") -c Release --nologo -v q "-p:PayloadZip=$zip" "-p:ModVersion=$version"
+if ($LASTEXITCODE -ne 0) { throw "Échec du build de l'installeur" }
+$exe = Join-Path $root "dist\ZoomerMod-$version-Installer.exe"
+Copy-Item (Join-Path $inst "bin\Release\net48\ZoomerMod-Installer.exe") $exe -Force
+"{0} ({1:N1} Mo)" -f $exe, ((Get-Item $exe).Length / 1MB)

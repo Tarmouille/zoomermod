@@ -10,20 +10,42 @@ Ce mod est **vibe codé** : écrit en grande partie avec une IA (Claude), testé
 
 ## Installation
 
-1. Télécharge le zip de la dernière version dans [Releases](../../releases).
-2. Steam > clic droit sur Dale & Dawson > Gérer > Parcourir les fichiers locaux.
-3. Dézippe **tout** le contenu du zip dans ce dossier (à côté de `DDSS.exe`). Si Windows demande de remplacer des fichiers, accepte.
-   Le dossier doit ressembler à ça (avec en plus les fichiers `ZoomerMod ON.bat` et `ZoomerMod OFF.bat`) :
+Tout se télécharge dans [Releases](../../releases). Trois façons d'installer, au choix (le jeu doit être fermé) :
+
+### A. L'installeur (le plus simple)
+
+1. Télécharge `ZoomerMod-X.Y.Z-Installer.exe` et lance-le, depuis n'importe où.
+2. Il trouve le jeu tout seul via Steam (sinon : **Parcourir…**). Clique sur **Installer**.
+
+Le même programme sert ensuite à **mettre à jour**, **activer / désactiver** le mod (pour les parties publiques) et
+**désinstaller**. L'installeur n'est pas signé : Windows peut afficher « Windows a protégé votre ordinateur ».
+Clique sur *Informations complémentaires* puis *Exécuter quand même*. Son code est dans [`tools/setup/installer`](tools/setup/installer).
+
+### B. Le zip + le script d'installation
+
+1. Télécharge le zip `ZoomerMod-X.Y.Z.zip` et extrais **tout** son contenu n'importe où (Téléchargements, Bureau…).
+2. Double-clique sur **`Installer ZoomerMod.bat`** : il trouve le jeu via Steam et y copie le mod.
+   Le script qu'il lance, [`ZoomerMod-Setup.ps1`](tools/setup/ZoomerMod-Setup.ps1), est lisible avec le Bloc-notes.
+
+`Desinstaller ZoomerMod.bat` retire le mod.
+
+### C. À la main
+
+1. Steam > clic droit sur Dale & Dawson > Gérer > Parcourir les fichiers locaux.
+2. Dézippe **tout** le contenu du zip dans ce dossier (à côté de `DDSS.exe`). Si Windows demande de remplacer des fichiers, accepte.
+   Le dossier doit ressembler à ça (avec en plus les fichiers `ZoomerMod ON.bat`, `ZoomerMod OFF.bat`, etc.) :
 
    <img src="docs/tuto.png" alt="Dossier du jeu après installation" width="650">
 
-4. Double-clique sur **`ZoomerMod ON.bat`** (dans ce même dossier) pour activer le mod. Le jeu doit être fermé.
-5. Lance le jeu depuis Steam. Le premier lancement est long (1 à 3 minutes).
+3. Double-clique sur **`ZoomerMod ON.bat`** (dans ce même dossier) pour activer le mod.
 
+### Ensuite
+
+Lance le jeu depuis Steam. Le premier lancement est long (1 à 3 minutes).
 Si tout marche, `ZoomerMod vX.Y.Z` s'affiche en bas à droite du menu principal.
 Tout le monde dans la partie doit avoir la même version. **Joue uniquement en lobby privé, avec des gens qui ont le mod.**
 
-`ZoomerMod OFF.bat` / `ZoomerMod ON.bat` (dans le dossier du jeu) désactivent / réactivent le mod.
+`ZoomerMod OFF.bat` / `ZoomerMod ON.bat` (dans le dossier du jeu) désactivent / réactivent le mod, comme le bouton de l'installeur.
 
 ## Nouvelles tâches
 
@@ -209,8 +231,12 @@ connu de tous les jeux moddés avec BepInEx. Le code est entièrement ici, tu pe
 
 ## Désinstaller
 
-Supprime `winhttp.dll` du dossier du jeu : le jeu redevient normal. Pour tout enlever, supprime aussi
-`doorstop_config.ini`, `.doorstop_version`, `ZoomerMod ON/OFF.bat` et les dossiers `BepInEx` et `dotnet`.
+Bouton **Désinstaller** de l'installeur, ou `Desinstaller ZoomerMod.bat`. Si d'autres mods BepInEx sont installés,
+seul ZoomerMod est retiré.
+
+À la main : supprime `winhttp.dll` du dossier du jeu, et le jeu redevient normal. Pour tout enlever, supprime aussi
+`doorstop_config.ini`, `.doorstop_version`, `ZoomerMod ON/OFF.bat`, `Installer/Desinstaller ZoomerMod.bat`,
+`ZoomerMod-Setup.ps1`, `LISEZ-MOI.txt` et les dossiers `BepInEx` et `dotnet`.
 
 ## Compiler
 
@@ -218,7 +244,7 @@ Prérequis : le jeu installé avec BepInEx 6 IL2CPP (lancé une fois, pour gén�
 
 ```
 dotnet build DaleMod -c Debug      # compile et copie le mod dans le jeu
-powershell -ExecutionPolicy Bypass -File tools\package.ps1   # zip de release dans dist\
+powershell -ExecutionPolicy Bypass -File tools\package.ps1   # zip et installeur .exe de release dans dist\
 ```
 
 Le chemin du jeu est dans `DaleMod/DaleMod.csproj` (`GameDir`) et `tools/package.ps1`.
