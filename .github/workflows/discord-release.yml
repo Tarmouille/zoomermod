@@ -1,0 +1,42 @@
+# Annonce chaque release publiée sur le Discord ZoomerMod (webhook dans le secret DISCORD_WEBHOOK).
+# Lancement à la main (onglet Actions) : réannonce une release existante, la dernière par défaut.
+name: Annonce Discord
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag à annoncer (vide : dernière release)"
+        required: false
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poster sur Discord
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ -z "$WEBHOOK" ]; then echo "Secret DISCORD_WEBHOOK absent"; exit 1; fi
+          gh release view ${TAG:+"$TAG"} -R "$GITHUB_REPOSITORY" --json name,tagName,body,url,assets > release.json
+          # Embed : titre, notes (limite Discord 4096 caractères), liens de téléchargement directs
+          jq '.url as $u | {
+            username: "ZoomerMod",
+            embeds: [{
+              title: ("🚀 " + .name),
+              url: .url,
+              color: 16753920,
+              description: (if (.body | length) > 3800 then (.body[0:3800] + "\n\n… suite sur GitHub") else .body end),
+              fields: [{
+                name: "Télécharger",
+                value: ([.assets[] | "[\(.name)](\(.url))"] | join("\n") | if . == "" then $u else . end)
+              }]
+            }]
+          }' release.json > payload.json
+          curl -fsS -H "Content-Type: application/json" -d @payload.json "$WEBHOOK"
+          echo "Annoncé : $(jq -r .tagName release.json)"
