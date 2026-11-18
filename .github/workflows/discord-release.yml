@@ -1,5 +1,6 @@
 # Annonce chaque release publiée sur le Discord ZoomerMod (webhook dans le secret DISCORD_WEBHOOK).
 # Lancement à la main (onglet Actions) : réannonce une release existante, la dernière par défaut.
+# Les pre-releases ne sont pas annoncées.
 name: Annonce Discord
 
 on:
@@ -23,7 +24,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$WEBHOOK" ]; then echo "Secret DISCORD_WEBHOOK absent"; exit 1; fi
-          gh release view ${TAG:+"$TAG"} -R "$GITHUB_REPOSITORY" --json name,tagName,body,url,assets > release.json
+          gh release view ${TAG:+"$TAG"} -R "$GITHUB_REPOSITORY" --json name,tagName,body,url,assets,isPrerelease,isDraft > release.json
+          # Releases réelles seulement (comme la mise à jour automatique) : pas de pre-release ni de brouillon
+          if jq -e '.isPrerelease or .isDraft' release.json > /dev/null; then echo "Pre-release ou brouillon : pas d'annonce"; exit 0; fi
           # Notes en deux langues : le français, puis une section "## English" (facultative), postée dans un 2e message.
           # Embed : titre, notes (limite Discord 4096 caractères), liens de téléchargement directs.
           cat > notes.jq <<'EOF'
