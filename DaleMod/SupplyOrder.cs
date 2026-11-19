@@ -340,15 +340,18 @@ static class SupplyOrder
     // Point de livraison : dans la pièce de l'accueil (ou, sans accueil, la salle de réunion du tableau blanc), sur le
     // côté de la pièce (le long d'un mur), au sol, sans rien autour (murs, guichet, table), à 1 m de toute chaise.
     // Même calcul chez tous les joueurs (les joueurs eux-mêmes sont ignorés) : le marquage est au même endroit partout.
+    // Calculé une fois par carte : la chaise (ou le tableau) de référence est détruite au changement de carte, le
+    // point est alors recalculé (sans ça, la livraison restait aux coordonnées de la première carte jouée)
     static Vector3? delivery;
-    static bool deliveryComputed;
+    static Component deliveryRef;
     static Vector3? DeliveryPoint()
     {
-        if (deliveryComputed) return delivery;
+        if (deliveryRef != null) return delivery;
         Component chair = Object.FindObjectOfType<ReceptionChair>();
         if (chair == null) chair = Object.FindObjectOfType<WhiteBoardController>();   // carte sans accueil : salle de réunion
         if (chair == null) return null;   // carte pas encore chargée : on réessaiera
-        deliveryComputed = true;
+        deliveryRef = chair;
+        delivery = null;
         var room = RoomContaining(chair.transform.position);
         var rb = room != null ? RoomBounds(room) : null;
         var center = rb?.center ?? chair.transform.position;

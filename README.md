@@ -21,6 +21,10 @@ Le même programme sert ensuite à **mettre à jour**, **activer / désactiver**
 **désinstaller**. L'installeur n'est pas signé : Windows peut afficher « Windows a protégé votre ordinateur ».
 Clique sur *Informations complémentaires* puis *Exécuter quand même*. Son code est dans [`tools/setup/installer`](tools/setup/installer).
 
+Depuis la 0.9.5, le mod **se met à jour tout seul** : au lancement du jeu, il télécharge la nouvelle version s'il y en
+a une, et le menu principal affiche « Relance le jeu ». L'installeur reste utile pour la première installation, ou si
+la mise à jour automatique échoue.
+
 ### B. Le zip + le script d'installation
 
 1. Télécharge le zip `ZoomerMod-X.Y.Z.zip` et extrais **tout** son contenu n'importe où (Téléchargements, Bureau…).
@@ -222,7 +226,10 @@ sans le mod, le personnage revient à ses objets d'origine.
 ## Ce que fait (et ne fait pas) le mod
 
 - Le zip contient [BepInEx 6](https://github.com/BepInEx/BepInEx) (le chargeur de mods) et `DaleMod.dll`, compilé depuis ce dépôt.
-- Le mod ne se connecte à rien sur internet : il passe uniquement par le réseau du jeu, entre les joueurs de la partie.
+- Sur internet, le mod ne contacte que GitHub, au lancement du jeu, pour la mise à jour automatique : il regarde la
+  dernière release de ce dépôt et, si elle est plus récente, télécharge son zip et remplace le dossier du mod
+  (`BepInEx\plugins\DaleMod`), actif au prochain lancement. Pour le reste, il passe uniquement par le réseau du jeu,
+  entre les joueurs de la partie.
 - Il ne lit ni n'écrit rien en dehors du dossier du jeu.
 - Il ne touche pas aux cosmétiques payants ni aux lobbies publics.
 

@@ -11,7 +11,7 @@ namespace DaleMod;
 
 // Debug seulement : commandes lues dans BepInEx/dalemod_cmd.txt (une par ligne, fichier supprimé après lecture), pour
 // régler les cosmétiques sans toucher au jeu :
-//   set <catégorie> <modèle> <couleur> [manager]   change l'apparence du personnage d'aperçu (menu)
+//   set <catégorie> <modèle> <couleur> [manager|janitor]   change l'apparence du personnage d'aperçu (menu)
 //   size <corpulence 0..1> [manager]
 //   face <nom> [distance] [angle]         photo du visage -> BepInEx/shots/<nom>.png
 //   body <nom> [angle]                    photo du corps entier
@@ -106,7 +106,8 @@ static class DevRemote
                 if (found == null) { found = new CustomizationParameterSelection(); found.parameterIndex = cat; pc.customizationParameterSelection.Add(found); }
                 found.modelIndex = model; found.colorIndex = color;
                 Plugin.L.LogInfo("[REMOTE] apparence : " + pc.ToJson());
-                c.Customize(pc, p.Length > 4 && p[4] == "manager" ? Player.Lobby.PlayerRole.Manager : Player.Lobby.PlayerRole.Specialist, false, false);
+                c.Customize(pc, p.Length > 4 && p[4] == "manager" ? Player.Lobby.PlayerRole.Manager
+                    : p.Length > 4 && p[4] == "janitor" ? Player.Lobby.PlayerRole.Janitor : Player.Lobby.PlayerRole.Specialist, false, false);
                 current = pc.ToJson();
                 return "ok";
             }

@@ -103,6 +103,7 @@ public class DebugMenu : MonoBehaviour
         {
             if (badgeLogo != null) badgeLogo.gameObject.SetActive(false);
             if (badgeText != null) badgeText.gameObject.SetActive(false);
+            if (updateText != null) updateText.gameObject.SetActive(false);
             return;
         }
         if (!logoTried)
@@ -150,6 +151,38 @@ public class DebugMenu : MonoBehaviour
         rtt.sizeDelta = new Vector2(w + 120f, badgeText.fontSize * 1.6f);
         rtt.anchoredPosition = new Vector2(-margin - w / 2f, badgeText.fontSize * 0.5f);
         badgeText.gameObject.SetActive(true);
+        UpdateNotice(margin, h);
+    }
+
+    // Mise à jour automatique (Updater) : bloc aligné à droite au-dessus du logo, assez large pour ne rien couper.
+    // L'info en petit, l'action à faire (relancer) en gras, plus grande, qui pulse du jaune du badge au rouge.
+    static TMPro.TextMeshProUGUI updateText;
+
+    static void UpdateNotice(float margin, float logoH)
+    {
+        string info = Updater.BadgeInfo(out string action);
+        if (info == null) { if (updateText != null) updateText.gameObject.SetActive(false); return; }
+        if (updateText == null)
+        {
+            updateText = GameUi.NewText("DaleMod_BadgeUpdate");
+            var rt = updateText.rectTransform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 0f);
+            updateText.alignment = TMPro.TextAlignmentOptions.BottomRight;
+            updateText.color = new Color(1f, 0.85f, 0.3f);
+        }
+        GameUi.Style(updateText);
+        string text = $"<size=70%>{info}</size>";
+        if (action != null)
+        {
+            var c = Color.Lerp(new Color(1f, 0.85f, 0.3f), new Color(1f, 0.25f, 0.2f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f));
+            text += $"\n<b><color=#{(int)(c.r * 255):X2}{(int)(c.g * 255):X2}{(int)(c.b * 255):X2}>{action}</color></b>";
+        }
+        updateText.text = text;
+        updateText.fontSize = Mathf.Max(18f, Screen.height / 32f);
+        var r = updateText.rectTransform;
+        r.sizeDelta = new Vector2(Screen.width * 0.4f, updateText.fontSize * 3f);
+        r.anchoredPosition = new Vector2(-margin, logoH + margin * 0.5f);
+        updateText.gameObject.SetActive(true);
     }
 
     void LateUpdate()

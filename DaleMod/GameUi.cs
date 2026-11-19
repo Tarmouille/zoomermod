@@ -33,7 +33,7 @@ static class GameUi
         for (int i = 0; i < root.childCount; i++)
         {
             var c = root.GetChild(i);
-            if (c.name != "DaleMod_Badge" && c.name != "DaleMod_BadgeLogo") c.gameObject.SetActive(false);
+            if (c.name != "DaleMod_Badge" && c.name != "DaleMod_BadgeLogo" && c.name != "DaleMod_BadgeUpdate") c.gameObject.SetActive(false);
         }
     }
 

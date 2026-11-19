@@ -40,7 +40,8 @@ for k in range(1, R + 2):
         phi = 2 * math.pi * j / S
         t = min(k, R) / R
         h = 0.014 - 0.009 * t if k <= R else -0.002          # dernier anneau : rentré dans la peau (pas de jour au bord)
-        if j == 0 and 1 <= k <= 3: h *= 0.45                   # raie au milieu, du front au sommet
+        if j == 0 and 1 <= k <= 2: h *= 0.7                    # raie au milieu, du sommet vers le front (pas trop creuse :
+                                                               # la peau ressortait par un petit trou devant)
         cap[1].append(tuple(sph(limit(phi) * t, phi, h)[0]))
 for j in range(S):
     cap[2].append((0, 1 + j, 1 + (j + 1) % S))

@@ -623,6 +623,24 @@ static class CosmeticExtras
                         float t = (b.high - b.H(pos)) / Mathf.Max(1e-6f, b.high - b.low);
                         return t > 0.9f ? (Fur(uv), 2) : (Velvet(uv), 1);
                     }, "noel_pants");
+                // Combinaison du janitor, sur le modèle "squelette" (Overall.001, "OverallGlow" selon le prefab : texture dessinée, zones séparées) :
+                // velours rouge, fourrure au col, aux poignets et aux chevilles
+                int overall = -1;
+                for (int i = 0; i < ps.Count; i++) if (ps[i]?.parameterName == "Overall") overall = i;
+                Painter suit = (b, pos, n, arm, uv) =>
+                {
+                    float L = b.neck - b.H(b.axis);
+                    float t = (b.high - b.H(pos)) / Mathf.Max(1e-6f, b.high - b.low);   // 0 en haut, 1 en bas
+                    float wrist = Mathf.Min((pos - b.handL).magnitude, (pos - b.handR).magnitude);
+                    bool fur = (arm > 0.5f && wrist < L * 0.09f) || (arm < 0.5f && (b.H(pos) > b.neck - L * 0.1f || t > 0.93f));
+                    return fur ? (Fur(uv), 1) : (Velvet(uv), 2);
+                };
+                // Une couleur "Noël" par modèle (chacune réservée au sien) : squelette, puis combinaison normale
+                if (overall >= 0)
+                {
+                    AddNoel(overall, Item(overall, "Overall.001") != null ? "Overall.001" : "OverallGlow", suit, "noel_overall_skel");
+                    AddNoel(overall, "Overall", suit, "noel_overall");
+                }
             }
 
             // Hoodie du manager, logo dans le dos

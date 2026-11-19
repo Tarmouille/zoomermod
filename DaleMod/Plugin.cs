@@ -9,7 +9,7 @@ namespace DaleMod;
 [BepInPlugin("dalemod", "DaleMod", Version)]
 public class Plugin : BasePlugin
 {
-    internal const string Name = "ZoomerMod", Version = "0.9.4";   // affichés sur le menu principal (DebugMenu.DrawBadge)
+    internal const string Name = "ZoomerMod", Version = "0.9.5";   // affichés sur le menu principal (DebugMenu.DrawBadge)
     internal static ManualLogSource L;
 
     public override void Load()
@@ -68,6 +68,8 @@ public class Plugin : BasePlugin
         ButtCopy.Register();
         Harmony.CreateAndPatchAll(typeof(StaplerTrap));
         Harmony.CreateAndPatchAll(typeof(NameTagFix));
+        Harmony.CreateAndPatchAll(typeof(CoffeeRound));
+        Harmony.CreateAndPatchAll(typeof(PhoneDiag));
         StaplerTrap.Register();
         Harmony.CreateAndPatchAll(typeof(Karaoke));
         Karaoke.Register();
@@ -104,5 +106,6 @@ public class Plugin : BasePlugin
         // Version lue par les installeurs (ZoomerMod-Installer.exe, ZoomerMod-Setup.ps1)
         try { System.IO.File.WriteAllText(System.IO.Path.Combine(BepInEx.Paths.PluginPath, "DaleMod", "version.txt"), Version); }
         catch (System.Exception e) { L.LogWarning("version.txt : " + e.Message); }
+        Updater.Start(System.IO.Path.Combine(BepInEx.Paths.PluginPath, "DaleMod"));
     }
 }

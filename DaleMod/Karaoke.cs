@@ -42,11 +42,28 @@ static class Karaoke
     internal static void Register()
     {
         // Le joueur qui a la tâche voit le manager arriver : le serveur coupe la chaîne chez tous
-        NetSignal.OnServer(StopUp, (it, _) =>
+        NetSignal.OnServer(StopUp, (it, sender) =>
         {
             var stereo = it.TryCast<StereoController>();
-            if (stereo != null) { stereo.RpcStop(); Plugin.L.LogInfo("[KARAOKE] musique coupée (le manager arrive)"); }
+            if (stereo != null) ServerStop(stereo, sender);
         });
+    }
+
+    // Serveur : arrêt complet, comme le bouton "Stop" de la chaîne (commande du jeu, au nom du joueur de la tâche). Un
+    // simple RpcStop coupait le son chez tous mais laissait la chaîne "en lecture" côté serveur : on ne pouvait plus y
+    // remettre de CD ensuite
+    static void ServerStop(StereoController stereo, NetworkIdentity player)
+    {
+        try
+        {
+            stereo.UserCode_CmdStop__NetworkIdentity__NetworkConnectionToClient(player, player?.connectionToClient);
+            Plugin.L.LogInfo($"[KARAOKE] musique coupée (le manager arrive) : arrêt de la chaîne, lecture={stereo.IsPlaying()}");
+        }
+        catch (Exception e)
+        {
+            stereo.RpcStop();
+            Plugin.L.LogWarning("[KARAOKE] arrêt de la chaîne impossible (" + e.Message + ") : son coupé seulement");
+        }
     }
 
     // ===================== La chanson et son CD =====================
@@ -144,6 +161,7 @@ static class Karaoke
         var room = BreakRoom(stereo);
         bool inRoom = room != null ? RoomOf(me) == room : Vector3.Distance(me.transform.position, stereo.transform.position) < 5f;
         bool ours = (playing == songIndex && songIndex >= 0) || SongPlaying(stereo);
+        if (!started) Diagnose(stereo, me);
 
         if (ours && inRoom && !started)
         {
@@ -160,7 +178,7 @@ static class Karaoke
             bool managerIn = room != null ? RoomOf(pc) == room : Vector3.Distance(pc.transform.position, stereo.transform.position) < 5f;
             if (!managerIn) continue;
             progress = 0f;
-            if (NetworkServer.active) stereo.RpcStop(); else NetSignal.SendToServer(stereo, StopUp);
+            if (NetworkServer.active) ServerStop(stereo, me.netIdentity); else NetSignal.SendToServer(stereo, StopUp);
             Hud.Show(CustomTaskPatches.Text("Le manager débarque ! Musique coupée, relance le CD.", "The manager walks in! Music stopped, play the CD again."), 3f);
             return;
         }
@@ -193,6 +211,32 @@ static class Karaoke
         }
         if (heard != lastHeard) { lastHeard = heard; Plugin.L.LogInfo($"[KARAOKE] la chaîne joue : {heard ?? "rien"}{(ours ? " (karaoké)" : "")}"); }
         return ours;
+    }
+
+    // CD du karaoké en main devant la chaîne sans que la tâche démarre : on note ce que propose la chaîne (une fois par
+    // situation), pour comprendre pourquoi le CD ne rentre pas
+    static string lastDiag;
+    static void Diagnose(StereoController stereo, PlayerController me)
+    {
+        if (Vector3.Distance(me.transform.position, stereo.transform.position) > 3f) return;
+        CDCase held = null;
+        foreach (var cd in Object.FindObjectsOfType<CDCase>())
+            if (ModItem.HeldBy(cd, me.netIdentity)) { held = cd; break; }
+        if (held == null) return;
+        var alts = new System.Collections.Generic.List<string>();
+        var cur = stereo._currentAlternatives ?? stereo.alternatives;
+        if (cur != null)
+            foreach (var a in cur)
+            {
+                if (a == null) continue;
+                bool shown = true;
+                try { if (a.showAlternative != null) shown = a.showAlternative.Invoke(); } catch { }
+                alts.Add($"'{a.text}'{(shown ? "" : " (cachée)")}{(a.requireUsable != null ? " [" + a.requireUsable.Name + "]" : "")}");
+            }
+        string diag = $"CD tenu n° {held.songIndex} (karaoké n° {songIndex}), chaîne : lecture={stereo.IsPlaying()}, interaction={stereo.canInteract}, choix {string.Join(", ", alts)}";
+        if (diag == lastDiag) return;
+        lastDiag = diag;
+        Plugin.L.LogInfo("[KARAOKE] " + diag);
     }
 
     static RoomController RoomOf(PlayerController pc) => Rooms.Of(pc);   // pièce d'après la position (Rooms)

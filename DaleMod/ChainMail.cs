@@ -95,11 +95,24 @@ static class ChainMail
         {
             if (pc.user == null || string.IsNullOrEmpty(pc.emailAddress)) continue;
             if (pc.user.username == me) mine = pc.emailAddress;
-            all[pc.emailAddress.ToLowerInvariant()] = pc.emailAddress;
-            all[pc.user.username.ToLowerInvariant()] = pc.emailAddress;   // accepte aussi le nom affiché
+            all[Key(pc.emailAddress)] = pc.emailAddress;
+            all[Key(pc.user.username)] = pc.emailAddress;   // accepte aussi le nom affiché
         }
         mine ??= me + "@DaleDawson.com";
         return all;
+    }
+
+    // Clé de comparaison des adresses : sans accents, apostrophes, espaces ni casse (un pseudo comme "Mariah C'estCarré"
+    // n'était pas reconnu : apostrophe typographique ou accent encodé autrement dans le champ du destinataire)
+    static string Key(string s)
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var ch in (s ?? "").Replace("​", "").Normalize(System.Text.NormalizationForm.FormD))
+        {
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch) == System.Globalization.UnicodeCategory.NonSpacingMark) continue;
+            if (char.IsLetterOrDigit(ch) || ch == '@' || ch == '.') sb.Append(char.ToLowerInvariant(ch));
+        }
+        return sb.ToString();
     }
 
     internal static void Tick()
@@ -165,11 +178,13 @@ static class ChainMail
         if (!Active(chain ? SpamKey : ForwardKey)) { windows.Remove(__instance.Pointer); return true; }
 
         var coworkers = Coworkers(out var mine);
-        coworkers[mine.ToLowerInvariant()] = mine;   // s'envoyer le mail à soi-même compte aussi
-        var typed = (__instance.receiver?.text ?? "").Replace("​", "").Trim().ToLowerInvariant();
-        Plugin.L.LogInfo($"[CHAIN] envoi vers '{typed}'");
+        coworkers[Key(mine)] = mine;   // s'envoyer le mail à soi-même compte aussi
+        var raw = __instance.receiver?.text ?? "";
+        var typed = Key(raw);
+        Plugin.L.LogInfo($"[CHAIN] envoi vers '{raw.Trim()}'");
         if (!coworkers.TryGetValue(typed, out var to))
         {
+            Plugin.L.LogInfo($"[CHAIN] destinataire inconnu '{typed}' ; connus : {string.Join(", ", coworkers.Keys)}");
             pc.ShowPopup(CustomTaskPatches.Text("Choisis un collègue (ou toi-même) comme destinataire.", "Pick a coworker (or yourself) as the recipient."), "OK");
             return false;
         }
