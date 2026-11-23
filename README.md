@@ -3,12 +3,12 @@
 <h1 align="center">ZoomerMod</h1>
 
 <p align="center">
-  <a href="https://discord.gg/jDJWRDMpA"><img src="https://img.shields.io/badge/Discord-Rejoindre%20le%20serveur-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Rejoindre le Discord"></a>
+  <a href="https://discord.gg/hBAqb96JeR"><img src="https://img.shields.io/badge/Discord-Rejoindre%20le%20serveur-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Rejoindre le Discord"></a>
 </p>
 
 <p align="center">
   <b>Trouve des joueurs, signale un bug, propose une idée de tâche ou de rôle, suis les nouvelles versions :</b><br>
-  tout se passe sur le <a href="https://discord.gg/jDJWRDMpA">Discord ZoomerMod</a>.
+  tout se passe sur le <a href="https://discord.gg/hBAqb96JeR">Discord ZoomerMod</a>.
 </p>
 
 Mod fan-made pour **Dale & Dawson Stationery Supplies** : nouvelles tâches, rôles et effets, à jouer entre amis.
@@ -279,9 +279,9 @@ Voir [`DaleMod/Assets/CREDITS.txt`](DaleMod/Assets/CREDITS.txt). Mod non officie
 ## Discord
 
 <p align="center">
-  <a href="https://discord.gg/jDJWRDMpA"><img src="https://img.shields.io/badge/Discord-Rejoindre%20le%20serveur-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Rejoindre le Discord"></a>
+  <a href="https://discord.gg/hBAqb96JeR"><img src="https://img.shields.io/badge/Discord-Rejoindre%20le%20serveur-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Rejoindre le Discord"></a>
 </p>
 
 <p align="center">
-  Une question, un bug, une idée ? Viens en parler sur le <a href="https://discord.gg/jDJWRDMpA">Discord ZoomerMod</a>.
+  Une question, un bug, une idée ? Viens en parler sur le <a href="https://discord.gg/hBAqb96JeR">Discord ZoomerMod</a>.
 </p>
