@@ -275,3 +275,13 @@ La musique du karaoké (`Assets/karaoke/rise.wav`) est aussi dans le zip de rele
 Musique du karaoké : *Rise of the Machines*, Music by Karl Casey @ White Bat Audio.
 
 Voir [`DaleMod/Assets/CREDITS.txt`](DaleMod/Assets/CREDITS.txt). Mod non officiel, sans lien avec les développeurs du jeu.
+
+## Discord
+
+<p align="center">
+  <a href="https://discord.gg/jDJWRDMpA"><img src="https://img.shields.io/badge/Discord-Rejoindre%20le%20serveur-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Rejoindre le Discord"></a>
+</p>
+
+<p align="center">
+  Une question, un bug, une idée ? Viens en parler sur le <a href="https://discord.gg/jDJWRDMpA">Discord ZoomerMod</a>.
+</p>
