@@ -184,10 +184,17 @@ static class ModAssets
     static readonly Dictionary<string, Texture2D> textures = new();
 
     // .png / .jpg -> Texture2D (mise en cache). ImageConversion.LoadImage est appelée côté IL2CPP (l'interop passe par des Span absents).
-    internal static unsafe Texture2D LoadTexture(string file)
+    internal static Texture2D LoadTexture(string file)
     {
         if (textures.TryGetValue(file, out var cached) && cached != null) return cached;
-        var path = Path.Combine(Dir, file);
+        var tex = LoadTextureFile(Path.Combine(Dir, file));
+        if (tex != null) textures[file] = tex;
+        return tex;
+    }
+
+    // Même chose depuis un chemin complet, sans cache (ex. textures peintes gardées dans BepInEx\cache)
+    internal static unsafe Texture2D LoadTextureFile(string path)
+    {
         if (!File.Exists(path)) { Plugin.L.LogWarning($"[ASSETS] {path} introuvable"); return null; }
         var tex = new Texture2D(2, 2, TextureFormat.RGBA32, true) { hideFlags = HideFlags.DontUnloadUnusedAsset };   // mipmaps : motifs nets de loin
         var data = new Il2CppStructArray<byte>(File.ReadAllBytes(path));
@@ -203,8 +210,7 @@ static class ModAssets
         Il2CppException.RaiseExceptionIfNecessary(exc);
 
         tex.wrapMode = TextureWrapMode.Repeat;
-        textures[file] = tex;
-        Plugin.L.LogInfo($"[ASSETS] {file} : {tex.width}x{tex.height}");
+        Plugin.L.LogInfo($"[ASSETS] {Path.GetFileName(path)} : {tex.width}x{tex.height}");
         return tex;
     }
 }

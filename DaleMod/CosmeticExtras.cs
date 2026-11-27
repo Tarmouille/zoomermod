@@ -494,9 +494,43 @@ static class CosmeticExtras
         return b;
     }
 
+    // Peindre une texture prend ~1 s (9 textures : ~9 s au premier personnage affiché, ex. l'écran de personnalisation).
+    // Une texture peinte est donc gardée en PNG : livrée avec le mod (Assets\cosmetics\baked\<clé>.png), sinon dans
+    // BepInEx\cache\ZoomerMod-baked\<version du mod>\ après le premier calcul. Changer la peinture d'une clé : changer
+    // la clé, ou supprimer son PNG livré (le mod en version Debug peint alors et range le résultat dans le cache).
+    static string BakeCacheDir => Path.Combine(BepInEx.Paths.CachePath, "ZoomerMod-baked", Plugin.Version);
+
+    static Texture2D LoadBaked(string key)
+    {
+        try
+        {
+            string shipped = Path.Combine(ModAssets.Dir, "cosmetics", "baked", key + ".png"), cached = Path.Combine(BakeCacheDir, key + ".png");
+            string path = File.Exists(shipped) ? shipped : File.Exists(cached) ? cached : null;
+            if (path == null) return null;
+            var tex = ModAssets.LoadTextureFile(path);
+            if (tex == null) return null;
+            tex.name = "DaleMod_" + key;
+            Plugin.L.LogInfo($"[COSMETIC] texture {key} reprise de {(path == shipped ? "Assets" : @"BepInEx\cache")}");
+            return tex;
+        }
+        catch (Exception e) { Plugin.L.LogWarning($"[COSMETIC] texture {key} : PNG illisible ({e.Message}), on la repeint"); return null; }
+    }
+
+    static void SaveBaked(string key, Texture2D tex)
+    {
+        try
+        {
+            Directory.CreateDirectory(BakeCacheDir);
+            File.WriteAllBytes(Path.Combine(BakeCacheDir, key + ".png"), ImageConversion.EncodeToPNG(tex));
+        }
+        catch (Exception e) { Plugin.L.LogWarning($"[COSMETIC] texture {key} : pas gardée ({e.Message})"); }
+    }
+
     static Texture2D Bake(SkinnedMeshRenderer smr, int submesh, Color32 background, Painter paint, string key)
     {
         if (baked.TryGetValue(key, out var done) && done != null) return done;
+        var loaded = LoadBaked(key);
+        if (loaded != null) return baked[key] = loaded;
         var mesh = smr.sharedMesh;
         var b = Frame(smr, out var Arm);
         if (b == null) { Plugin.L.LogWarning("[COSMETIC] os manquants pour peindre " + key); return null; }
@@ -544,6 +578,7 @@ static class CosmeticExtras
         int both = 0, motif = 0;
         for (int i = 0; i < px.Length; i++) { if (facing[i] == 2) both++; if (prio[i] == 2) motif++; }
         Plugin.L.LogInfo($"[COSMETIC] texture peinte : {key} ({tri.Length / 3} triangles, torse {b.halfW:0.0000}, {motif} texels de motif, {both} texels partagés devant/dos)");
+        SaveBaked(key, tex);
         return baked[key] = tex;
     }
 

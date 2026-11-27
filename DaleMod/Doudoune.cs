@@ -40,7 +40,11 @@ static class Doudoune
         Mesh mesh;
         try
         {
-            string key = tee.sharedMesh.GetInstanceID() + (open ? "o" : "f");
+            // Chaque personnage a sa copie du maillage du t-shirt : clé d'après son contenu (même forme -> même doudoune)
+            var tv = tee.sharedMesh.vertices;
+            var sum = Vector3.zero;
+            foreach (var x in tv) sum += x;
+            string key = $"{tee.sharedMesh.name}|{tv.Length}|{sum.x:0.0000},{sum.y:0.0000},{sum.z:0.0000}|{submesh}" + (open ? "o" : "f");
             if (!shapes.TryGetValue(key, out var s)) shapes[key] = s = Build(tee, submesh, open);
             mesh = new Mesh { name = name, hideFlags = HideFlags.DontUnloadUnusedAsset };
             mesh.vertices = s.v;

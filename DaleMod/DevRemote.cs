@@ -221,6 +221,19 @@ static class DevRemote
                 }
                 return sb.ToString();
             }
+            case "tab":   // ouvre un onglet du menu (UIManager.OpenTab) ; sans nom : liste les onglets
+            {
+                if (p.Length < 2)
+                {
+                    var names = new System.Collections.Generic.List<string>();
+                    foreach (var t in Object.FindObjectsOfType<UMUI.UiTab>(true)) names.Add($"{t.name}({t.GetIl2CppType().Name})");
+                    return string.Join(", ", names);
+                }
+                var ui = Object.FindObjectOfType<UMUI.UIManager>();
+                if (ui == null) return "pas d'UIManager";
+                ui.OpenTab(p[1]);
+                return "onglet " + p[1];
+            }
             case "colors":   // couleurs de chaque catégorie : matériau, shader, couleur de base, texture, réservations
             {
                 if (c == null) return "pas de personnage";
