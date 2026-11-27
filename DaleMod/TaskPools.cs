@@ -37,6 +37,7 @@ static class TaskPools
             // enregistré (on ne sait jamais), sauf pour les autres familles
             if (sub != SubRole.None && role != PlayerRole.Slacker && role != PlayerRole.Manager && role != PlayerRole.Janitor)
                 role = PlayerRole.Specialist;
+            if (role == PlayerRole.Janitor) { RedistributeJanitor(__instance, lp, taskIndices); return; }
             if (role != PlayerRole.Specialist && role != PlayerRole.Slacker) return;
             var list = __instance.GetEnabledTaskList();
             var pools = Pools(list, OneOnOne.BossPresent(lp));   // un chef autre que ce joueur (ex. l'Assistant seul)
@@ -73,6 +74,34 @@ static class TaskPools
         }
         catch (Exception e) { Plugin.L.LogError("[POOL] " + e); }
     }
+
+    // Pool du Janitor : ses tâches du jeu (rôle Janitor), "Recharger le papier toilette" du jeu (pas classée Janitor) et
+    // nos tâches JanitorOnly. Le jeu lui donnait toutes ses tâches d'un coup : on en tire UNE seule dans ce pool.
+    const string ToiletPaperTask = "RefillToiletPaperTask";
+
+    static void RedistributeJanitor(TaskController tc, LobbyPlayer lp, Il2CppSystem.Collections.Generic.List<int> taskIndices)
+    {
+        var list = tc.GetEnabledTaskList();
+        if (!dumpedJanitor) { dumpedJanitor = true; Dump(list); }
+        var pool = new List<int>();
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (!OnThisMap(list[i].Item4)) continue;
+            var roles = list[i].Item2;
+            bool janitor = roles != null && roles.Contains(PlayerRole.Janitor);
+            if (janitor || list[i].Item1.Name == ToiletPaperTask) pool.Add(i);
+        }
+        var given = string.Join(",", Describe(list, taskIndices));
+        if (pool.Count == 0) { Plugin.L.LogWarning($"[POOL] {lp?.username} (Janitor) : pool vide, tirage du jeu gardé [{given}]"); return; }
+        int pick = pool[rng.Next(pool.Count)];
+        taskIndices.Clear();
+        taskIndices.Add(pick);
+        var names = new List<string>();
+        foreach (var i in pool) names.Add(CustomTaskPatches.CustomTitle(i, list.Count) ?? list[i].Item1.Name.Replace("Task", ""));
+        Plugin.L.LogInfo($"[POOL] {lp?.username} (Janitor, pool : {string.Join(", ", names)}) : [{given}] -> [{string.Join(",", Describe(list, taskIndices))}]");
+    }
+
+    static bool dumpedJanitor;
 
     // Index tiré au hasard dans le pool, en évitant ceux déjà donnés dans ce lot si possible
     static int Pick(List<int> pool, HashSet<int> taken)

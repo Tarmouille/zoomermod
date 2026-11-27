@@ -113,7 +113,8 @@ static class Ponpons
         foreach (var p in ps)
         {
             if (p?.parameterName != "Hat" || p.customizationItems == null) continue;
-            foreach (var x in p.customizationItems) if (x != null && x.gameObject.activeSelf) return true;
+            foreach (var x in p.customizationItems)
+                if (x != null && x.gameObject.activeSelf && !CosmeticExtras.KeepsHair(x.gameObject.name)) return true;   // le nœud garde les chignons
         }
         return false;
     }

@@ -57,6 +57,7 @@ public class DebugMenu : MonoBehaviour
         Perf.Run("PRES", () => { ClientPresentation.Tick(); });
         Perf.Run("STAPLER", () => { StaplerTrap.Tick(); });
         Perf.Run("PROUT", () => { WhoopeeCushion.Tick(); });
+        Perf.Run("VENTOUSE", () => { Plunger.Tick(); });
         Perf.Run("KARAOKE", () => { Karaoke.Tick(); });
         Perf.Run("RACUCH", () => { Racuch.Tick(); });
         Perf.Run("COSMETIC", () => { Cosmetics.Tick(); });

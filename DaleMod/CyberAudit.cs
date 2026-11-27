@@ -12,14 +12,14 @@ namespace DaleMod;
 // Tâche "Audit Cybersécurité" (bleue, Specialist ; voir TaskPools) : sur le PC d'un joueur, ouvrir l'app Antivirus du
 // jeu, le désactiver puis le réactiver. Chaque réactivation (après une désactivation par moi, sur ce PC) valide une
 // étape ; 3 PC différents, sauf s'il y a moins de 3 joueurs (le même PC peut alors resservir).
-// 1 chance sur 10 qu'un contrôle validé ouvre 10 fenêtres de pub sur ce PC (PopupSpam), à fermer avec leur croix.
+// 1 chance sur 5 qu'un contrôle validé ouvre 10 fenêtres de pub sur ce PC (PopupSpam), à fermer avec leur croix.
 // Détection : RpcSetFirewall(joueur, état), reçu par tous les clients quand quelqu'un bascule un antivirus.
 static class CyberAudit
 {
     internal const string Key = "dalemod.auditCyber";
     internal const string AuditedAction = "Audited", AntivirusObj = "Antivirus";
     const int Needed = 3;
-    const float SpamChance = 0.1f;
+    const float SpamChance = 0.2f;
 
     static bool TaskActive() => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), Key);
 

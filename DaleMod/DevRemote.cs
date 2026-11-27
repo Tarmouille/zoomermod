@@ -111,6 +111,65 @@ static class DevRemote
                 current = pc.ToJson();
                 return "ok";
             }
+            case "addr":   // adresse native de méthodes du jeu (RVA dans GameAssembly.dll), pour les décompiler
+            {
+                var mod = System.Diagnostics.Process.GetCurrentProcess().Modules;
+                IntPtr gaBase = IntPtr.Zero;
+                foreach (System.Diagnostics.ProcessModule m in mod) if (m.ModuleName == "GameAssembly.dll") gaBase = m.BaseAddress;
+                foreach (var (t, n) in new[] { (typeof(Player.PlayerController), "SetHeadObjectsVisible"), (typeof(Player.PlayerController), "SetLayerRecursively"),
+                                               (typeof(PlayerCustomizer), "Customize"), (typeof(CustomizationParameter), "IsCorrectCombination") })
+                {
+                    var f = t.GetField(Il2CppInterop.Common.Il2CppInteropUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(t.GetMethod(n)).Name,
+                                       System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+                    var mi = (IntPtr)f.GetValue(null);
+                    var ptr = System.Runtime.InteropServices.Marshal.ReadIntPtr(mi);   // MethodInfo->methodPointer
+                    Plugin.L.LogInfo($"[ADDR] {t.Name}.{n} = 0x{(long)ptr - (long)gaBase:X}");
+                }
+                return "ok";
+            }
+            case "addrs":   // table RVA -> méthode (Assembly-CSharp + modules Unity) dans BepInEx/addrs.txt
+            {
+                IntPtr gaBase = IntPtr.Zero;
+                foreach (System.Diagnostics.ProcessModule m in System.Diagnostics.Process.GetCurrentProcess().Modules) if (m.ModuleName == "GameAssembly.dll") gaBase = m.BaseAddress;
+                var sb = new System.Text.StringBuilder();
+                int count = 0;
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    var an = asm.GetName().Name;
+                    if (an != "Assembly-CSharp" && !an.StartsWith("UnityEngine")) continue;
+                    Type[] types;
+                    try { types = asm.GetTypes(); } catch { continue; }
+                    foreach (var t in types)
+                        foreach (var f in t.GetFields(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic))
+                        {
+                            if (!f.Name.StartsWith("NativeMethodInfoPtr_") || f.FieldType != typeof(IntPtr)) continue;
+                            try
+                            {
+                                var mi = (IntPtr)f.GetValue(null);
+                                if (mi == IntPtr.Zero) continue;
+                                var ptr = System.Runtime.InteropServices.Marshal.ReadIntPtr(mi);
+                                sb.Append($"{(long)ptr - (long)gaBase:X} {t.FullName}.{f.Name.Substring(20)}").Append('\n');
+                                count++;
+                            }
+                            catch { }
+                        }
+                }
+                File.WriteAllText(Path.Combine(BepInEx.Paths.BepInExRootPath, "addrs.txt"), sb.ToString());
+                return count + " méthodes";
+            }
+            case "usurp":   // apparence inventée de l'Usurpateur (graine), sans toucher à l'apparence retenue
+            case "restore": // retour à l'apparence retenue (comme la fin du déguisement)
+            {
+                if (c == null) return "pas de personnage";
+                current ??= PlayerPrefs.GetString("playerCustomizationJson_" + PlayerPrefs.GetInt("currentCustomizationIndex", 0), "");
+                if (string.IsNullOrEmpty(current) && c.playerCustomization != null) current = c.playerCustomization.ToJson();
+                var own = PlayerCustomization.FromJson(current);
+                Cosmetics.Ensure(c);
+                var look = p[0] == "usurp" ? Usurpateur.RandomLook(c, own, int.Parse(p[1]), out var nm) : own;
+                Plugin.L.LogInfo($"[REMOTE] {p[0]} : " + look.ToJson());
+                c.Customize(look, Player.Lobby.PlayerRole.Specialist, false, false);
+                return "ok";
+            }
             case "preset":
             {
                 // Comme un clic sur un personnage enregistré dans l'écran de personnalisation
@@ -161,6 +220,34 @@ static class DevRemote
                     sb.Append($" | barbe {i}: {(it == null ? "null" : it.gameObject.name + " id=" + it.id + " actif=" + it.gameObject.activeSelf)}");
                 }
                 return sb.ToString();
+            }
+            case "colors":   // couleurs de chaque catégorie : matériau, shader, couleur de base, texture, réservations
+            {
+                if (c == null) return "pas de personnage";
+                var sb = new System.Text.StringBuilder();
+                foreach (var cp in c.customizationParameters)
+                {
+                    if (cp?.colorItems == null) continue;
+                    sb.Append($"\n== {cp.parameterName} (id {cp.id}, {cp.customizationItems?.Count} objets, colorOnly={cp.colorOnly}, colorParameters={cp.colorParameters?.Count})");
+                    for (int i = 0; cp.customizationItems != null && i < cp.customizationItems.Count; i++)
+                    {
+                        var it = cp.customizationItems[i];
+                        if (it != null) sb.Append($"\n  objet {i} {it.gameObject.name} sous-mat {it.colorIndexInRenderer}");
+                    }
+                    for (int i = 0; i < cp.colorItems.Count; i++)
+                    {
+                        var ci = cp.colorItems[i];
+                        if (ci == null) { sb.Append($"\n  [{i}] null"); continue; }
+                        var m = ci.material;
+                        string tex = m != null && m.HasProperty("_BaseMap") && m.GetTexture("_BaseMap") != null ? m.GetTexture("_BaseMap").name : "-";
+                        string col = m != null && m.HasProperty("_BaseColor") ? "#" + ColorUtility.ToHtmlStringRGB(m.GetColor("_BaseColor")) : "-";
+                        string strict = "";
+                        if (ci.strictItems != null) foreach (var s in ci.strictItems) strict += (s == null ? "null" : s.gameObject.name) + ",";
+                        sb.Append($"\n  [{i}] {ci.itemName} id={ci.id} mat={m?.name} shader={m?.shader?.name} base={col} tex={tex} prix={ci.price} réservé=[{strict}]");
+                    }
+                }
+                Plugin.L.LogInfo("[COLORS]" + sb);
+                return "couleurs écrites dans le log";
             }
             case "mesh":
             {

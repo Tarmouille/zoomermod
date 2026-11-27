@@ -9,7 +9,7 @@ namespace DaleMod;
 [BepInPlugin("dalemod", "DaleMod", Version)]
 public class Plugin : BasePlugin
 {
-    internal const string Name = "ZoomerMod", Version = "0.9.5";   // affichés sur le menu principal (DebugMenu.DrawBadge)
+    internal const string Name = "ZoomerMod", Version = "0.10.0";   // affichés sur le menu principal (DebugMenu.DrawBadge)
     internal static ManualLogSource L;
 
     public override void Load()
@@ -75,6 +75,10 @@ public class Plugin : BasePlugin
         Karaoke.Register();
         Harmony.CreateAndPatchAll(typeof(WhoopeeCushion));
         WhoopeeCushion.Register();   // crée aussi l'objet réseau du coussin
+        Harmony.CreateAndPatchAll(typeof(Plunger));
+        Plunger.Register();
+        Harmony.CreateAndPatchAll(typeof(VendingJam));
+        VendingJam.Register();
         Harmony.CreateAndPatchAll(typeof(Racuch));
         Racuch.Register();
         Harmony.CreateAndPatchAll(typeof(RoleKit));   // rôles bonus : carte de rôle, écran de fin

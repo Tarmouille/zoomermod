@@ -224,11 +224,39 @@ static class PcMod
             var src = uvp.GetTargetAudioSource(0);
             if (src != null) src.volume = 1f;
             Plugin.L.LogInfo($"[PC] audio : mode={uvp.audioOutputMode} source={(src == null ? "-" : $"vol={src.volume} spatial={src.spatialBlend} portée={src.maxDistance}")}");
+            PrivateTexture(vp, uvp);
             uvp.Play();
             configured.Add(uvp.Pointer);
             Plugin.L.LogInfo($"[PC] vidéo remplacée par {path}");
         }
         Rebrand(vp);
+    }
+
+    // Le lecteur du jeu dessine dans une RenderTexture du projet, partagée : la télé du bureau et le fond de certains
+    // spams l'affichent aussi, et elle garde la dernière image (donc une image de GlucksTube). Notre lecteur dessine
+    // dans sa propre texture, que l'on met aussi sur l'image de la fenêtre.
+    static readonly Dictionary<IntPtr, RenderTexture> privateRt = new();
+    static void PrivateTexture(VideoPlayer vp, UnityEngine.Video.VideoPlayer uvp)
+    {
+        try
+        {
+            var shared = vp.renderTexture ?? uvp.targetTexture;
+            var mat = vp.image?.material;
+            Plugin.L.LogInfo($"[PC] texture vidéo : mode={uvp.renderMode} rt={(shared == null ? "-" : $"{shared.name} {shared.width}x{shared.height}")} " +
+                             $"image={(vp.image == null ? "-" : vp.image.name)} matTex={(mat?.mainTexture == null ? "-" : mat.mainTexture.name)}");
+            if (shared == null) return;
+            if (!privateRt.TryGetValue(uvp.Pointer, out var rt) || rt == null)
+                privateRt[uvp.Pointer] = rt = new RenderTexture(shared.width, shared.height, shared.depth) { name = "GlucksTubeRT" };
+            uvp.targetTexture = rt;
+            vp.renderTexture = rt;
+            if (vp.image != null && mat != null && mat.mainTexture == shared)
+                vp.image.material = new Material(mat) { mainTexture = rt };
+            var win = vp.applicationWindow;
+            if (win != null)
+                foreach (var raw in win.GetComponentsInChildren<UnityEngine.UI.RawImage>(true))
+                    if (raw.texture == shared) raw.texture = rt;
+        }
+        catch (Exception e) { Plugin.L.LogError("[PC] texture vidéo privée : " + e); }
     }
 
     // Toute la fenêtre, à chaque tick (le jeu peut remettre ses textes / images) : textes "MeowTube" -> "GlucksTube",

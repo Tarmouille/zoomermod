@@ -111,6 +111,17 @@ Elles tombent comme celles du jeu : **bleues** (Specialist), **rouges** (Slacker
 | Attention Mr. Zoomer | Saboter le broyeur : le prochain qui broie un document y laisse sa main (jusqu'à 60 s) |
 | Agrafeuse piégée | Piéger l'agrafeuse d'un poste : le prochain qui s'y assoit ou touche la gelée se fait agrafer le doigt |
 
+### Janitor
+
+Le janitor reçoit **une tâche à la fois**, tirée au hasard parmi le nettoyage et le papier toilette du jeu, et ces
+tâches bleues qui n'existent que pour lui :
+
+| Tâche | Ce qu'il faut faire |
+|---|---|
+| Toilettes bouchées | Prendre la ventouse dans le placard de la cuisine et déboucher les toilettes indiquées |
+| Inspection des extincteurs | Vérifier 3 extincteurs (1 chance sur 4 qu'il parte tout seul) |
+| Distributeur bloqué | Débloquer le distributeur de boissons, puis manger les 2 trucs qui en tombent |
+
 ## Rôles bonus
 
 Au début de la partie, des **rôles bonus** sont tirés au hasard : 1 à 5-6 joueurs, 2 à 7-8, 3 à 9-10, et ainsi de suite

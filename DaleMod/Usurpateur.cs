@@ -229,9 +229,18 @@ static class Usurpateur
         var pc = ControllerOf(it);
         var own = pc?.lobbyPlayer;
         if (own?.playerCustomization == null) return;
-        var rng = new System.Random(seed * 7919 + 13);
-        var look = PlayerCustomization.FromJson(own.playerCustomization.ToJson());
         var customizer = pc.GetComponentInChildren<PlayerCustomizer>(true);
+        var look = RandomLook(customizer, own.playerCustomization, seed, out var name);
+        Customize(pc, look, own.playerRole);
+        disguises[pc.Pointer] = new Disguise { Pc = pc, Name = name };
+        if (pc.isLocalPlayer) OnLocalDisguised(name, -1);
+    }
+
+    // Apparence inventée (graine partagée : la même chez tous) ; aussi utilisée par DevRemote ("usurp") pour tester
+    internal static PlayerCustomization RandomLook(PlayerCustomizer customizer, PlayerCustomization own, int seed, out string name)
+    {
+        var rng = new System.Random(seed * 7919 + 13);
+        var look = PlayerCustomization.FromJson(own.ToJson());
         if (customizer?.customizationParameters != null && look.customizationParameterSelection != null)
             foreach (var sel in look.customizationParameterSelection)
             {
@@ -241,17 +250,18 @@ static class Usurpateur
                 for (int tries = 0; tries < 10; tries++)
                 {
                     int m = models > 0 ? rng.Next(models) : sel.modelIndex, c = colors > 0 ? rng.Next(colors) : sel.colorIndex;
-                    if (!p.IsCorrectCombination(m, c, sel)) continue;
+                    bool ok;
+                    try { ok = p.IsCorrectCombination(m, c, sel); }
+                    catch { ok = false; }   // le jeu plante sur certaines combinaisons (catégories ajoutées par le mod)
+                    if (!ok) continue;
                     sel.modelIndex = m; sel.colorIndex = c;
                     break;
                 }
             }
-        string name = FirstNames[rng.Next(FirstNames.Length)] + " " + LastNames[rng.Next(LastNames.Length)];
+        name = FirstNames[rng.Next(FirstNames.Length)] + " " + LastNames[rng.Next(LastNames.Length)];
         look.firstName = name.Split(' ')[0];
         look.lastName = name.Split(' ')[1];
-        Customize(pc, look, own.playerRole);
-        disguises[pc.Pointer] = new Disguise { Pc = pc, Name = name };
-        if (pc.isLocalPlayer) OnLocalDisguised(name, -1);
+        return look;
     }
 
     // Personnages enregistrés dans le menu de personnalisation (PlayerPrefs du PC qui les lit) : sert au mannequin, en
@@ -300,8 +310,101 @@ static class Usurpateur
     {
         var customizer = pc.GetComponentInChildren<PlayerCustomizer>(true);
         if (customizer == null || look == null) { Plugin.L.LogWarning("[USURP] PlayerCustomizer introuvable"); return; }
+        Diag(pc, customizer, "avant");
+        Snapshot(pc, customizer);
         try { customizer.Customize(look, role, false, false); }
         catch (Exception e) { Plugin.L.LogError("[USURP] Customize : " + e); }
+        Diag(pc, customizer, "après");
+        Repair(pc, customizer, "aussitôt");
+        checks.Add((pc, customizer, Time.unscaledTime + 0.5f));
+        checks.Add((pc, customizer, Time.unscaledTime + 2f));
+    }
+
+    // Filet de sécurité (chez les autres, le corps ou la tête du joueur déguisé disparaissait parfois après le
+    // déguisement, même redéguisé) : état d'affichage de chaque objet relevé avant le premier déguisement, remis après
+    // chaque changement d'apparence (aussitôt, puis 0,5 s et 2 s plus tard). Chez le joueur lui-même, le jeu met sa tête
+    // sur une couche masquée (vue à la première personne) : on n'y touche pas.
+    sealed class RState { public int Layer; public bool Enabled; public UnityEngine.Rendering.ShadowCastingMode Shadow; }
+    static readonly Dictionary<IntPtr, Dictionary<IntPtr, RState>> snapshots = new();
+    static readonly List<(Player.PlayerController pc, PlayerCustomizer c, float at)> checks = new();
+    const int HiddenHeadLayer = 22;
+
+    static void Snapshot(Player.PlayerController pc, PlayerCustomizer c)
+    {
+        if (pc.isLocalPlayer || snapshots.ContainsKey(c.Pointer)) return;
+        var s = new Dictionary<IntPtr, RState>();
+        foreach (var r in c.GetComponentsInChildren<Renderer>(true))
+            s[r.Pointer] = new RState { Layer = r.gameObject.layer, Enabled = r.enabled, Shadow = r.shadowCastingMode };
+        snapshots[c.Pointer] = s;
+    }
+
+    static void Repair(Player.PlayerController pc, PlayerCustomizer c, string when)
+    {
+        try
+        {
+            if (pc == null || c == null || pc.isLocalPlayer || !snapshots.TryGetValue(c.Pointer, out var s)) return;
+            // Couche "normale" du corps : la plus fréquente parmi les objets relevés
+            var count = new Dictionary<int, int>();
+            foreach (var x in s.Values) if (x.Layer != HiddenHeadLayer) count[x.Layer] = count.GetValueOrDefault(x.Layer) + 1;
+            int bodyLayer = 0, best = -1;
+            foreach (var (l, n) in count) if (n > best) { best = n; bodyLayer = l; }
+            var fixes = new List<string>();
+            foreach (var r in c.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!r.gameObject.activeInHierarchy) continue;
+                if (s.TryGetValue(r.Pointer, out var x))
+                {
+                    if (r.gameObject.layer != x.Layer) { fixes.Add($"{r.name} couche {r.gameObject.layer}->{x.Layer}"); r.gameObject.layer = x.Layer; }
+                    if (r.enabled != x.Enabled) { fixes.Add($"{r.name} {(x.Enabled ? "rallumé" : "éteint")}"); r.enabled = x.Enabled; }
+                    if (r.shadowCastingMode != x.Shadow) { fixes.Add($"{r.name} ombre {r.shadowCastingMode}->{x.Shadow}"); r.shadowCastingMode = x.Shadow; }
+                }
+                else
+                {
+                    // Objet jamais vu (pièce de la victime) : visible, sur la couche du corps
+                    if (r.gameObject.layer == HiddenHeadLayer) { fixes.Add($"{r.name} couche {HiddenHeadLayer}->{bodyLayer}"); r.gameObject.layer = bodyLayer; }
+                    if (!r.enabled) { fixes.Add($"{r.name} rallumé"); r.enabled = true; }
+                    if (r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly) { fixes.Add($"{r.name} ombre seule -> normal"); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On; }
+                }
+                if (r.forceRenderingOff) { fixes.Add($"{r.name} forceRenderingOff"); r.forceRenderingOff = false; }
+                // Maillage refait : ses limites peuvent être fausses et le faire disparaître sous certains angles
+                var smr = r.TryCast<SkinnedMeshRenderer>();
+                if (smr != null && !smr.updateWhenOffscreen) smr.updateWhenOffscreen = true;
+            }
+            if (fixes.Count > 0) Plugin.L.LogWarning($"[USURP] réparé ({when}) : {string.Join(", ", fixes)}");
+        }
+        catch (Exception e) { Plugin.L.LogWarning("[USURP] réparation : " + e.Message); }
+    }
+
+    static void TickRepairs()
+    {
+        for (int i = checks.Count - 1; i >= 0; i--)
+        {
+            if (Time.unscaledTime < checks[i].at) continue;
+            var (pc, c, _) = checks[i];
+            checks.RemoveAt(i);
+            if (pc != null && c != null) { Repair(pc, c, "après coup"); Diag(pc, c, "après coup"); }
+        }
+    }
+
+    // Diagnostic (corps / tête qui disparaissent après un déguisement) : état de chaque objet affiché du personnage.
+    // Jamais de nom de joueur : "moi" ou "autre".
+    static void Diag(Player.PlayerController pc, PlayerCustomizer c, string when)
+    {
+        try
+        {
+            var parts = new List<string>();
+            foreach (var r in c.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!r.gameObject.activeInHierarchy) continue;
+                string mesh = "";
+                var smr = r.TryCast<SkinnedMeshRenderer>();
+                if (smr != null) mesh = smr.sharedMesh == null ? " SANS MAILLAGE" : $" {smr.sharedMesh.vertexCount}v {smr.bounds.size.magnitude:0.00}m";
+                else { var mf = r.GetComponent<MeshFilter>(); if (mf != null) mesh = mf.sharedMesh == null ? " SANS MAILLAGE" : $" {mf.sharedMesh.vertexCount}v"; }
+                parts.Add($"{r.name}[c{r.gameObject.layer}{(r.enabled ? "" : " OFF")}{(r.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly ? " ombre" : "")}{mesh}]");
+            }
+            Plugin.L.LogInfo($"[USURP] diag {when} ({(pc.isLocalPlayer ? "moi" : "autre")}, échelle {c.transform.lossyScale.x:0.00}) : {string.Join(" ", parts)}");
+        }
+        catch (Exception e) { Plugin.L.LogWarning("[USURP] diag : " + e.Message); }
     }
 
     // Étiquettes de nom : celle du monde (NameTag2 : nom du personnage, nom Steam, poste) et celle du HUD (NameTag).
@@ -485,6 +588,7 @@ static class Usurpateur
     internal static void Tick()
     {
         ApplyNameTags();
+        TickRepairs();
         if (!mine) { ShowBanner(null); RoleKey.Bar(0f, 0f); return; }
 
         var me = NetworkClient.localPlayer;

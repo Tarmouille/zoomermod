@@ -24,6 +24,7 @@ class ModItem
     public Dictionary<string, string> Textures;   // optionnel : groupe -> image d'Assets (sinon couleur unie)
     public bool SitOnPivot;                      // fond du modèle sur le pivot (celui du soda est au fond de la canette) + collision ajustée
     public bool NeverDespawn;                    // reste par terre indéfiniment (le soda disparaît après un temps d'inactivité)
+    public bool GripOnPivot;                     // origine du .obj = la prise en main (ex. la ventouse, tenue par le manche) + collision ajustée
     GameObject template;
 
     public ModItem(string name, uint assetId, string objFile, Vector3 scale, Dictionary<string, Color> colors)
@@ -106,6 +107,7 @@ class ModItem
             Plugin.L.LogInfo($"[ITEM] {Name} : pièce '{mf.name}' rotation d'origine {mf.transform.localEulerAngles}");
             if (ResetChildRotation) mf.transform.localRotation = Quaternion.identity;
             if (SitOnPivot) FitToPivot(go, mf, mesh);
+            if (GripOnPivot) FitAroundPivot(go, mf, mesh);
             if (r == null) continue;
             var baseMat = r.sharedMaterial;
             var mats = new Material[groups.Count];
@@ -142,6 +144,22 @@ class ModItem
             box.size = Vector3.Scale(b.size, scale);
         }
         Plugin.L.LogInfo($"[ITEM] {Name} : modèle remonté de {lift * 100f:0.0} cm");
+    }
+
+    // Modèle centré sur le pivot de l'objet (là où la main le tient), collision calée sur tout le modèle : posé par
+    // terre, il repose sur son point le plus bas
+    void FitAroundPivot(GameObject go, MeshFilter mf, Mesh mesh)
+    {
+        mf.transform.localPosition = Vector3.zero;
+        var b = mesh.bounds;
+        foreach (var col in go.GetComponentsInChildren<Collider>(true))
+        {
+            Plugin.L.LogInfo($"[ITEM] {Name} : collision {col.GetIl2CppType().Name} sur '{col.name}'");
+            var box = col.TryCast<BoxCollider>();
+            if (box == null || box.transform != go.transform) continue;
+            box.center = Vector3.Scale(b.center, scale);
+            box.size = Vector3.Scale(b.size, scale);
+        }
     }
 
     // Copie purement visuelle du modèle (ni réseau, ni collision), le fond posé sur le pivot de l'objet rendu ;

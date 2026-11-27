@@ -23,6 +23,7 @@ static class CosmeticExtras
     {
         public string Name, File, Icon, Fr, En;
         public bool HidesFace;
+        public bool KeepsHair;               // posé derrière les cheveux : ne les écrase pas (gros nœud)
         public float Margin = 1f;            // grossissement autour de la tête (casque qui l'enveloppe)
         public Func<string, Material> Mat;   // matière d'un groupe du .obj
     }
@@ -71,7 +72,12 @@ static class CosmeticExtras
                   } },
         new Hat { Name = "DaleMod_HautDeForme", File = "haut_de_forme.obj", Icon = "icon_haut_de_forme.png", Fr = "Haut-de-forme", En = "Top hat",
                   Mat = g => g == "ruban" ? Lit(new Color(0.4f, 0.05f, 0.08f), 0.6f, 0f) : Lit(new Color(0.05f, 0.05f, 0.06f), 0.35f, 0f) },
+        // tools/make_noeud.py
+        new Hat { Name = "DaleMod_GrosNoeud", File = "noeud.obj", Icon = "icon_noeud.png", Fr = "Gros nœud", En = "Big bow", KeepsHair = true,
+                  Mat = g => g == "noeud" ? Lit(new Color(0.08f, 0.08f, 0.09f), 0.45f, 0f) : Lit(new Color(0.04f, 0.04f, 0.045f), 0.4f, 0f) },
     };
+
+    internal static bool KeepsHair(string n) => hats.Exists(h => h.Name == n && h.KeepsHair);
 
     internal static bool IsHatName(string n) => hats.Exists(h => h.Name == n);
 
@@ -133,8 +139,8 @@ static class CosmeticExtras
             it.itemName = h.Name;
             it.id = hatParam.customizationItems.Count.ToString();
             it.price = 0;
-            it.cutHair = squash != null;
-            if (squash != null) it.clampHairMaterial = squash.clampHairMaterial;
+            it.cutHair = squash != null && !h.KeepsHair;
+            if (it.cutHair) it.clampHairMaterial = squash.clampHairMaterial;
             it.modelRenderer = mr;
             it.meshFilter = mf;
             it.clonedMesh = mf.sharedMesh;
@@ -186,11 +192,11 @@ static class CosmeticExtras
             if (t == null || !t.gameObject.activeSelf) continue;
             f ??= measure();
             if (f == null) return;
-            Build(t, f, LoadHat(h.File), h.Margin);
+            Build(t, f, LoadHat(h.File), h.Margin, h.KeepsHair ? HairBack.Of(c, f) : null);
         }
     }
 
-    static void Build(Transform obj, Cosmetics.Face f, HatSrc src, float margin)
+    static void Build(Transform obj, Cosmetics.Face f, HatSrc src, float margin, HairBack hair = null)
     {
         float top = float.MinValue, minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
         foreach (var p in f.pts) { top = Mathf.Max(top, p.y); minX = Mathf.Min(minX, p.x); maxX = Mathf.Max(maxX, p.x); }
@@ -199,6 +205,10 @@ static class CosmeticExtras
         float s = hw / 0.14f * margin;            // les chapeaux sont faits pour une tête de 28 cm de large
         float sz = Mathf.Max(hd, hw) / 0.14f * margin;   // et aussi profonde : on suit la profondeur réelle
         float zc = (minZ + maxZ) * 0.5f;
+        // Position (repère visage) de chaque sommet du modèle
+        var pos = new Vector3[src.V.Count];
+        for (int i = 0; i < pos.Length; i++) { var q = src.V[i]; pos[i] = new Vector3(q.x * s, top + q.y * s, zc + q.z * sz); }
+        if (hair != null) hair.Fit(src, pos);
         // Sous-maillages à deux faces (sommets à part) + un sous-maillage vide pour la couleur du jeu ; UV en cylindre
         var verts = new List<Vector3>(); var uvs = new List<Vector2>();
         var subs = new List<int[]>();
@@ -211,7 +221,7 @@ static class CosmeticExtras
                 foreach (var id in ids)
                 {
                     var q = src.V[id];
-                    var w = f.World(new Vector3(q.x * s, top + q.y * s, zc + q.z * sz));
+                    var w = f.World(pos[id]);
                     list.Add(verts.Count);
                     verts.Add(obj.InverseTransformPoint(w));
                     uvs.Add(new Vector2(Mathf.Atan2(q.x, q.z) / (2f * Mathf.PI) * 3f, q.y * 8f));
@@ -230,6 +240,98 @@ static class CosmeticExtras
         obj.GetComponent<MeshFilter>().sharedMesh = mesh;
         var it = obj.GetComponent<CustomizationItem>();
         if (it != null) it.clonedMesh = mesh;
+    }
+
+    // Arrière de la coupe portée (cheveux + crâne), pour poser un objet juste derrière sans qu'il rentre dedans :
+    // grille de 1 cm (repère visage, x/y) -> z le plus en arrière.
+    sealed class HairBack
+    {
+        readonly Dictionary<(int, int), float> back = new();
+        float cell, gap;
+
+        internal static HairBack Of(PlayerCustomizer c, Cosmetics.Face f)
+        {
+            var hb = new HairBack { cell = 0.01f * f.k, gap = 0.004f * f.k };
+            foreach (var p in f.pts) hb.Add(p);
+            int n = 0;
+            var ps = c.customizationParameters;
+            int hi = ps == null ? -1 : Ponpons.FindHair(ps);
+            if (hi >= 0)
+                foreach (var it in ps[hi].customizationItems)
+                {
+                    if (it == null || !it.gameObject.activeSelf) continue;
+                    foreach (var w in WorldVerts(it))
+                    {
+                        var d = w - f.nose;
+                        hb.Add(new Vector3(Vector3.Dot(d, f.right), Vector3.Dot(d, f.up), Vector3.Dot(d, f.fwd)));
+                        n++;
+                    }
+                }
+            Plugin.L.LogInfo($"[COSMETIC] arrière de la coiffure : {n} sommets de cheveux, {hb.back.Count} cases");
+            return hb;
+        }
+
+        static List<Vector3> WorldVerts(CustomizationItem it)
+        {
+            var res = new List<Vector3>();
+            var r = it.modelRenderer;
+            if (r == null) return res;
+            var smr = r.TryCast<SkinnedMeshRenderer>();
+            Mesh mesh = null; bool baked = false;
+            if (smr != null) { mesh = new Mesh(); smr.BakeMesh(mesh); baked = true; }
+            else mesh = it.clonedMesh ?? it.meshFilter?.sharedMesh ?? r.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null) return res;
+            try
+            {
+                var tr = r.transform;
+                var a = new List<Vector3>(); var b = new List<Vector3>();
+                foreach (var v in mesh.vertices) { a.Add(tr.TransformPoint(v)); b.Add(tr.position + tr.rotation * v); }
+                res = !baked || Cosmetics.Closer(a, b, r.bounds.center) ? a : b;   // maillage cuit à l'échelle ou non
+            }
+            catch (Exception e) { Plugin.L.LogWarning($"[COSMETIC] cheveux {it.gameObject.name} illisibles : {e.Message}"); }
+            if (baked) Object.Destroy(mesh);
+            return res;
+        }
+
+        void Add(Vector3 p)
+        {
+            var key = ((int)Mathf.Floor(p.x / cell), (int)Mathf.Floor(p.y / cell));
+            if (!back.TryGetValue(key, out var z) || p.z < z) back[key] = p.z;
+        }
+
+        // z à ne pas dépasser (vers l'avant) en (x, y) ; NaN : rien autour
+        float Limit(float x, float y)
+        {
+            int cx = (int)Mathf.Floor(x / cell), cy = (int)Mathf.Floor(y / cell);
+            float best = float.NaN;
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                    if (back.TryGetValue((cx + i, cy + j), out var z) && (float.IsNaN(best) || z < best)) best = z;
+            return float.IsNaN(best) ? best : best - gap;
+        }
+
+        // Le nœud (boucles + bande) en bloc, collé au plus près ; les pans ("pan") suivent ensuite la coiffure en descendant
+        internal void Fit(HatSrc src, Vector3[] pos)
+        {
+            var isPan = new bool[pos.Length];
+            for (int g = 0; g < src.Groups.Count; g++)
+                if (src.Groups[g] == "pan") foreach (var id in src.Tris[g]) isPan[id] = true;
+            float shift = float.NegativeInfinity;
+            for (int i = 0; i < pos.Length; i++)
+            {
+                if (isPan[i]) continue;
+                float lim = Limit(pos[i].x, pos[i].y);
+                if (!float.IsNaN(lim)) shift = Mathf.Max(shift, pos[i].z - lim);
+            }
+            if (float.IsNegativeInfinity(shift)) return;
+            for (int i = 0; i < pos.Length; i++)
+            {
+                var p = pos[i];
+                p.z -= shift;
+                if (isPan[i]) { float lim = Limit(p.x, p.y); if (!float.IsNaN(lim) && p.z > lim) p.z = lim; }   // repoussé, jamais aspiré
+                pos[i] = p;
+            }
+        }
     }
 
     // Casque de Solaire porté : cheveux, barbe, sourcils, yeux, lunettes et accessoires du visage masqués
@@ -506,6 +608,7 @@ static class CosmeticExtras
                     ("tshirt_tarm", "Kaiju chat", "Kaiju cat", new Color32(244, 232, 215, 255)),
                     ("tshirt_tarm_1", "Bouffer en entier", "Swallow whole", new Color32(0, 0, 0, 255)),
                     ("tshirt_pingu", "Pingu", "Pingu", null),
+                    ("tshirt_abott", "Dr Jack Abbot", "Dr Jack Abbot", new Color32(16, 16, 16, 255)),
                 })
                 {
                     var img = LoadRgba(file + ".rgba");

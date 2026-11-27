@@ -30,8 +30,45 @@ static class Autograph
     static uint myDrawing;
     static readonly HashSet<uint> seen = new(), fixedImages = new();
 
+    // Contenu de chaque image imprimée (empreinte des octets reçus par SetImage, chez tous les clients) : une copie
+    // faite à l'imprimante est une autre image (autre netId) au même contenu, et compte comme "mon" dessin.
+    static readonly Dictionary<IntPtr, ulong> contentOf = new();
+    static ulong myContent;
+
+    [HarmonyPatch(typeof(PrintedImage), nameof(PrintedImage.SetImage))]
+    [HarmonyPostfix]
+    static void AfterSetImage(PrintedImage __instance, Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<byte> __0)
+    {
+        Note(__instance, __0);
+    }
+
+    // Image envoyée à tous par l'imprimante (RpcSetImage, côté clients : nom obfusqué) ; les copies passent par là
+    [HarmonyPatch(typeof(Printer), nameof(Printer.Method_Protected_Void_NetworkIdentity_Il2CppStructArray_1_Byte_PDM_0))]
+    [HarmonyPostfix]
+    static void AfterRpcSetImage(NetworkIdentity __0, Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<byte> __1)
+    {
+        try { Note(__0?.GetComponent<PrintedImage>(), __1); }
+        catch (Exception e) { Plugin.L.LogWarning("[AUTOGRAPH] image reçue : " + e.Message); }
+    }
+
+    static void Note(PrintedImage img, Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppStructArray<byte> bytes)
+    {
+        if (img == null || bytes == null) return;
+        ulong h = 14695981039346656037UL;   // FNV-1a
+        for (int i = 0; i < bytes.Length; i++) { h ^= bytes[i]; h *= 1099511628211UL; }
+        contentOf[img.Pointer] = h ^ (ulong)bytes.Length;
+    }
+
+    // Mon dessin, ou une copie de lui
+    static bool IsMine(PrintedImage img)
+    {
+        if (img == null || myDrawing == 0) return false;
+        if (img.netId == myDrawing) return true;
+        return myContent != 0 && contentOf.TryGetValue(img.Pointer, out var h) && h == myContent;
+    }
+
     // Appelé par Windmill quand le Paint du PC local imprime
-    internal static void NotePrint() { lastPrint = Time.time; myDrawing = 0; }
+    internal static void NotePrint() { lastPrint = Time.time; myDrawing = 0; myContent = 0; }
 
     internal static void Tick()
     {
@@ -40,9 +77,11 @@ static class Autograph
             if (seen.Add(img.netId) && Time.time - lastPrint < MineWindow && myDrawing == 0)
             {
                 myDrawing = img.netId;
+                myContent = 0;
                 lastPrint = -99f;
                 Plugin.L.LogInfo($"[AUTOGRAPH] mon dessin : {img.netId}");
             }
+            if (img.netId == myDrawing && myContent == 0 && contentOf.TryGetValue(img.Pointer, out var h)) myContent = h;
             // Image déjà signée (joueur arrivé après la signature) : signature affichée aussi
             if (img.signed && !fixedImages.Contains(img.netId)) EnsureSignature(img, null, null);
         }
@@ -69,12 +108,12 @@ static class Autograph
         if (img == null) return;
         var signer = __state?.GetComponent<PlayerController>()?.lobbyPlayer;
         string name = signer?.username;
-        Plugin.L.LogInfo($"[AUTOGRAPH] image {img.netId} signée par {name ?? "?"} (mon dessin={img.netId == myDrawing})");
+        Plugin.L.LogInfo($"[AUTOGRAPH] image {img.netId} signée par {name ?? "?"} (mon dessin={(img.netId == myDrawing ? "original" : IsMine(img) ? "copie" : "non")})");
         try { EnsureSignature(img, name, signer); }
         catch (Exception e) { Plugin.L.LogError("[AUTOGRAPH] affichage : " + e); }
 
         var me = NetworkClient.localPlayer;
-        if (img.netId != myDrawing || __state == null) return;
+        if (!IsMine(img) || __state == null) return;
         bool self = __state == me;
         if (TaskActive())
         {

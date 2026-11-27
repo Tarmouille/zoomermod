@@ -132,9 +132,10 @@ static class TaskHookObjectsPatches
         // Formation sécurité -> les extincteurs, puis son poste (mail)
         added |= Targets(Hook(SafetyCheck.CheckedAction, SafetyCheck.ExObj), Object.FindObjectsOfType<Props.FireEx.FireExController>());
         added |= Targets(Hook(SafetyCheck.ReportedAction, SafetyCheck.ManagerObj), mine);
-        // Inventaire du frigo -> le frigo et les poubelles
+        // Inventaire du frigo -> le frigo (sortir l'aliment), puis les poubelles une fois l'aliment en main
         added |= Targets(Hook(FridgeCleanup.ThrownAction, FridgeCleanup.FoodObj),
-                         Append(Object.FindObjectsOfType<Props.TrashBin.TrashBin>(), fridgeObj));
+                         FridgeCleanup.AimTrash ? Append(Object.FindObjectsOfType<Props.TrashBin.TrashBin>())
+                                                : new Component[] { fridgeObj });
         // Café pour l'équipe -> machines à café et bureaux des autres
         added |= Targets(Hook(CoffeeRound.DeliveredAction, CoffeeRound.CoffeeObj), Append(Object.FindObjectsOfType<CoffeeMachine>(), otherDesks.Cast<Component>().ToArray()));
         // Audit Cybersécurité -> les postes des joueurs
@@ -180,6 +181,12 @@ static class TaskHookObjectsPatches
         var jelly = ModItem.JellyCabinet();
         if (jelly != null) added |= Targets(Hook(WhoopeeCushion.TookAction, WhoopeeCushion.Obj), new[] { jelly });
         added |= Targets(Hook(WhoopeeCushion.PlacedAction, WhoopeeCushion.Obj), WhoopeeCushion.TargetDesks());
+        // Toilettes bouchées -> le placard de la gelée (prendre la ventouse), puis les toilettes bouchées
+        if (jelly != null) added |= Targets(Hook(Plunger.TookAction, Plunger.Obj), new[] { jelly });
+        added |= Targets(Hook(Plunger.UnclogAction, Plunger.Obj), Plunger.CloggedToilets());
+        // Distributeur bloqué -> les distributeurs (débloquer, puis manger ce qui en est tombé)
+        added |= Targets(Hook(VendingJam.UnjammedAction, VendingJam.Obj), VendingJam.Machines());
+        added |= Targets(Hook(VendingJam.AteAction, VendingJam.Obj), VendingJam.Machines());
         // Un poisson pour Racuch -> l'aquarium (pêcher), puis le chat (donner)
         added |= Targets(Hook(Racuch.TookAction, Racuch.Obj), Object.FindObjectsOfType<FishTankController>());
         added |= Targets(Hook(Racuch.GaveAction, Racuch.Obj), Object.FindObjectsOfType<CatController>());
@@ -197,6 +204,17 @@ static class TaskHookObjectsPatches
         bool any = false;
         foreach (var o in objs) if (o != null) { TaskHook.SetTaskHookObject(hook, o.gameObject); any = true; }
         return any;
+    }
+
+    // Change les cibles d'une étape en cours de route : on retire les anciennes, puis l'indicateur se recalcule
+    internal static void Retarget(string action, string obj)
+    {
+        var all = TaskHook.taskHookObjects;
+        if (all != null)
+            for (int i = all.Count - 1; i >= 0; i--)
+                if (all[i].Item1 != null && all[i].Item1.action == action && all[i].Item1.passiveObjectName == obj) all.RemoveAt(i);
+        lastCount = -1;   // force RegisterAll
+        TaskHighlighter.instance?.UpdateHighlighter();
     }
 
     static Component[] Append<T>(System.Collections.Generic.IEnumerable<T> a, params Component[] b) where T : Component

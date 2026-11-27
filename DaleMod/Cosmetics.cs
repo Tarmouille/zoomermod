@@ -191,6 +191,19 @@ static class Cosmetics
             if (hat >= 0) CosmeticExtras.AddHats(c, ps[hat], head, itemIcons, itemNames);
             CosmeticExtras.AddClothes(c, ps, root, colorIcons, NewColor);
 
+            // Rose dragée (#F4ABBA), couleur unie pour toutes les chemises / t-shirts, pantalons / jupes / shorts et
+            // chaussures : copie de la première couleur unie de la catégorie (mêmes réglages de matériau). Ajouté à la
+            // fin : les numéros des couleurs existantes ne bougent pas.
+            Color dragee = new Color32(0xF4, 0xAB, 0xBA, 255);
+            foreach (int p in new[] { shirt, pants, Find(ps, "Shoes") })
+            {
+                if (p < 0 || ps[p].colorItems.Count == 0 || ps[p].colorItems[0]?.material == null) continue;
+                var m = new Material(ps[p].colorItems[0].material) { name = "DaleMod_dragee_" + ps[p].parameterName, hideFlags = HideFlags.DontUnloadUnusedAsset };
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", dragee);
+                if (m.HasProperty("_Color")) m.SetColor("_Color", dragee);
+                ps[p].colorItems.Add(NewColor(root, ps[p], ps[p].colorItems.Count, T("Rose dragée", "Baby pink"), m, null));
+            }
+
             // 15e catégorie : Crâne (rien / raboté)
             var skull = new CustomizationParameter();
             skull.customizationType = hat >= 0 ? ps[hat].customizationType : CustomizationType.Hat;
@@ -433,7 +446,7 @@ static class Cosmetics
         return Closer(a, b, pick.bounds.center) ? a : b;
     }
 
-    static bool Closer(List<Vector3> a, List<Vector3> b, Vector3 target)
+    internal static bool Closer(List<Vector3> a, List<Vector3> b, Vector3 target)
     {
         Vector3 ca = Vector3.zero, cb = Vector3.zero;
         foreach (var v in a) ca += v; foreach (var v in b) cb += v;

@@ -382,7 +382,7 @@ print('noel ok')
 # ------------------------------------------------------------------ t-shirts imprimés (images de tools/src)
 # Image entière sur le devant, t-shirt de la couleur du fond de l'image (relevée dans les coins)
 SRC = os.path.join(HERE, 'src')
-for name in ('tshirt_tarm', 'tshirt_tarm_1', 'tshirt_pingu'):
+for name in ('tshirt_tarm', 'tshirt_tarm_1', 'tshirt_pingu', 'tshirt_abott'):
     p = os.path.join(SRC, name + '.png')
     if not os.path.exists(p): continue
     im = Image.open(p).convert('RGBA')

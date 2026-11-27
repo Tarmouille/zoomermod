@@ -28,6 +28,7 @@ class CustomTask
     public bool NotForManager;                   // tâche bleue que le Manager ne tire pas (ex. "1 to 1" avec lui)
     public bool RequiresManager;                 // pas tirée s'il n'y a aucun chef (Manager ou Assistant) dans la partie (TaskPools)
     public bool ForAssistant;                    // tâche Manager que l'Assistant (sous-rôle de Specialist) peut aussi tirer
+    public bool JanitorOnly;                     // couleur de Role, mais tirée seulement par le Janitor (tirage du jeu : rôle Janitor dans la liste)
 }
 
 static class CustomTaskPatches
@@ -438,6 +439,45 @@ static class CustomTaskPatches
                 (Racuch.GaveAction, Racuch.Obj, "Le donner à l'un des chats", "Give it to one of the cats"),
             },
         },
+        new CustomTask
+        {
+            // Janitor : ventouse prise au placard de la gelée, toilettes tirées au sort à déboucher (Plunger.cs)
+            Carrier = typeof(ExtinguishPumpkinTask), Key = Plunger.Key, Role = PlayerRole.Specialist, JanitorOnly = true,
+            TitleFr = "Toilettes bouchées", TitleEn = "Clogged toilet",
+            DescFr = "Quelqu'un a encore abusé du chili", DescEn = "Someone overdid the chili again",
+            OnSetUp = Plunger.PickToilet,
+            Steps = new[]
+            {
+                (Plunger.TookAction, Plunger.Obj, "Prendre la ventouse dans le placard de la cuisine", "Take the plunger from the kitchen cupboard"),
+                (Plunger.UnclogAction, Plunger.Obj, "Déboucher les toilettes", "Unclog the toilet"),
+            },
+        },
+        new CustomTask
+        {
+            // Janitor : les 3 vérifications de "Formation sécurité", sans le mail (pas de PC) (SafetyCheck.cs)
+            Carrier = typeof(LightPumpkinTask), Key = SafetyCheck.JanitorKey, Role = PlayerRole.Specialist, JanitorOnly = true,
+            TitleFr = "Inspection des extincteurs", TitleEn = "Fire extinguisher inspection",
+            DescFr = "Ça ne devrait pas exploser. Normalement.", DescEn = "It shouldn't go off. Normally.",
+            Steps = new[]
+            {
+                (SafetyCheck.CheckedAction, SafetyCheck.ExObj, "Vérifier un extincteur en main (1/3)", "Inspect a fire extinguisher in hand (1/3)"),
+                (SafetyCheck.CheckedAction, SafetyCheck.ExObj, "Vérifier un autre extincteur (2/3)", "Inspect another fire extinguisher (2/3)"),
+                (SafetyCheck.CheckedAction, SafetyCheck.ExObj, "Vérifier un autre extincteur (3/3)", "Inspect another fire extinguisher (3/3)"),
+            },
+        },
+        new CustomTask
+        {
+            // Janitor : débloquer un distributeur (5 s), 2 objets au hasard en tombent, les manger tous les deux (VendingJam.cs)
+            Carrier = typeof(ExtinguishPumpkinTask), Key = VendingJam.Key, Role = PlayerRole.Specialist, JanitorOnly = true,
+            TitleFr = "Distributeur bloqué", TitleEn = "Jammed vending machine",
+            DescFr = "Contrôle qualité des produits", DescEn = "Product quality control",
+            Steps = new[]
+            {
+                (VendingJam.UnjammedAction, VendingJam.Obj, "Débloquer le distributeur de boissons", "Unjam the vending machine"),
+                (VendingJam.AteAction, VendingJam.Obj, "Manger ce qui est tombé (1/2)", "Eat what dropped out (1/2)"),
+                (VendingJam.AteAction, VendingJam.Obj, "Manger ce qui est tombé (2/2)", "Eat what dropped out (2/2)"),
+            },
+        },
     };
 
     // Spam RH : 5 étapes identiques (chaque envoi à un nouveau collègue en valide une)
@@ -668,10 +708,10 @@ static class CustomTaskPatches
     static void AddEntry(TaskList list, CustomTask d)
     {
         var roles = new Il2CppSystem.Collections.Generic.List<PlayerRole>();
-        roles.Add(d.Role);   // premier rôle = couleur (TaskPools, GetPlayerRole)
+        roles.Add(d.JanitorOnly ? PlayerRole.Janitor : d.Role);   // premier rôle = pool (TaskPools) ; la couleur affichée vient de GetPlayerRole
         // Tâches bleues : comme celles du jeu ("Specialist+Manager"), le Manager peut aussi les tirer (son tirage est
         // celui du jeu). Les sous-rôles Assistant / RH / Analyst sont des Specialists : déjà couverts.
-        if (d.Role == PlayerRole.Specialist && !d.NotForManager) roles.Add(PlayerRole.Manager);
+        if (d.Role == PlayerRole.Specialist && !d.NotForManager && !d.JanitorOnly) roles.Add(PlayerRole.Manager);
         var maps = new Il2CppSystem.Collections.Generic.List<Levels>();
         foreach (Levels l in Enum.GetValues(typeof(Levels))) maps.Add(l);
         var entry = new Il2CppSystem.ValueTuple<Il2CppSystem.Type, Il2CppSystem.Collections.Generic.List<PlayerRole>, bool, Il2CppSystem.Collections.Generic.List<Levels>>(Il2CppType.From(d.Carrier), roles, true, maps);

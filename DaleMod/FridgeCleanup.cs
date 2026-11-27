@@ -127,8 +127,22 @@ static class FridgeCleanup
     static float nextOdor;
     static readonly Dictionary<uint, (NetworkIdentity holder, float since)> holding = new();
 
+    // Indicateur : le frigo tant qu'on n'a rien en main, les poubelles avec l'aliment (TaskHookObjectsPatches)
+    internal static bool AimTrash;
+    static float nextAimCheck;
+
     internal static void Tick()
     {
+        if (Time.time >= nextAimCheck)
+        {
+            nextAimCheck = Time.time + 0.25f;   // LocalHoldsOne parcourt la scène : pas à chaque image
+            bool trash = TaskActive() && LocalHoldsOne();
+            if (trash != AimTrash)
+            {
+                AimTrash = trash;
+                TaskHookObjectsPatches.Retarget(ThrownAction, FoodObj);
+            }
+        }
         if (Time.time < nextOdor) return;
         nextOdor = Time.time + OdorEvery;
         var alive = new HashSet<uint>();

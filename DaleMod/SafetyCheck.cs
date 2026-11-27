@@ -19,14 +19,17 @@ namespace DaleMod;
 //   tout seul : jet pour tous, et le porteur + les joueurs à moins de 2 m sont aspergés (comme "Rafraîchissement d'équipe") ;
 // - puis envoyer au manager le mail de compte rendu, prérempli dès que les 3 vérifications sont faites.
 // Les étapes du jeu se valident dans n'importe quel ordre : le mail n'est prérempli qu'après les 3 vérifications.
+// Variante "Inspection des extincteurs" (JanitorKey, bleue, tirée seulement par le Janitor) : les 3 vérifications, sans mail.
 static class SafetyCheck
 {
     internal const string Key = "dalemod.formationSecurite";
+    internal const string JanitorKey = "dalemod.inspectionExtincteurs";   // variante du Janitor : sans PC, donc sans le mail
     internal const string CheckedAction = "Checked", ExObj = "Fire Extinguisher", ReportedAction = "Reported", ManagerObj = "Manager";
     const int Needed = 3;
     const float CheckSeconds = 3f, MisfireChance = 0.25f, MisfireRadius = 2f, CheckAction = -82.5f;
 
-    static bool TaskActive() => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), Key);
+    static bool TaskActive() => MailTask() || CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), JanitorKey);
+    static bool MailTask() => CustomTaskPatches.IsActive(CustomTaskPatches.ActiveTask(), Key);
     static TaskHook Hook(string action, string obj) => new(null, obj, null, action, null, null);
 
     // Chez le joueur : extincteurs déjà vérifiés pour la tâche en cours (remis à zéro à chaque nouvelle tâche)
@@ -98,7 +101,7 @@ static class SafetyCheck
     internal static void Tick()
     {
         SyncTask();
-        if (!TaskActive() || reported || checkedIds.Count < Needed) return;
+        if (!MailTask() || reported || checkedIds.Count < Needed) return;
         foreach (var w in Object.FindObjectsOfType<WriteEmail>())
         {
             if (!seen.Add(w.Pointer)) continue;
@@ -119,7 +122,7 @@ static class SafetyCheck
     {
         if (!ours.Remove(__instance.Pointer)) return true;
         var pc = __instance.GetComponentInParent<ComputerController>(true);
-        if (pc == null || !TaskActive()) return true;
+        if (pc == null || !MailTask()) return true;
         EmailManager.instance.SendEmail(pc.emailAddress, To(), Subject(), Body());
         reported = true;
         TaskHook.TriggerTaskHookCommandStatic(Hook(ReportedAction, ManagerObj));

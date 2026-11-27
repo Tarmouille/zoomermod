@@ -11,23 +11,43 @@ Quand quelque chose ne passe pas : on note le problème, on corrige, et on refai
 À remplir au moment de préparer la release, à partir des commits depuis la dernière version
 (`git log --oneline v<dernière>..HEAD`). Une ligne par changement, avec comment le vérifier en jeu.
 
-Pour la prochaine (après 0.9.4), en cours :
+Pour la 0.10.0 (après 0.9.5) :
 
-- [ ] **Mise à jour automatique** : installer la version précédente, publier la nouvelle, relancer le jeu.
-      Sur le menu, sous la version : « en téléchargement… » puis « installée : relance le jeu ». Au lancement
-      suivant, le badge affiche la nouvelle version. Log : `[UPDATE]`.
-- [ ] **Mise à jour déjà faite** : relancer encore une fois, le badge ne montre plus de ligne de mise à jour
-      (log `[UPDATE] à jour`).
-- [ ] **Tournée de café** : poser une tasse pleine sur le porte-tasse du poste d'un collègue, compté même si le
-      collègue la reprend tout de suite. Une tasse ne compte qu'une fois.
-- [ ] **Mail en chaîne** : envoyer à un collègue dont le pseudo a une apostrophe ou un accent, et à soi-même : compté.
-- [ ] **Karaoké** : lancer le karaoké, laisser le manager arriver (musique coupée), puis remettre un CD dans la
-      chaîne : elle doit l'accepter (avant, elle restait bloquée « en lecture »). Si le CD ne rentre pas : log `[KARAOKE]`.
-- [ ] **Ponpons** : plus de petit trou dans les cheveux devant (raie moins creuse).
-- [ ] **Commande de fournitures** : jouer deux cartes de suite dans la même session, le carton arrive dans la bonne
-      pièce sur la deuxième carte.
-- [ ] **Tenue de Noël du janitor** : combinaison normale et modèle squelette, couleurs correctes.
-- [ ] **Téléphones** : si un appel vers un joueur pas viré échoue, récupérer le log de l'hôte (`[PHONE]`).
+**Janitor (nouveau)**
+- [ ] **Une tâche à la fois**, tirée au hasard dans son pool : Nettoyage, Papier toilette, Toilettes bouchées,
+      Inspection des extincteurs, Distributeur bloqué. Log `[POOL] … (Janitor, pool : …)` : le papier toilette doit
+      y être.
+- [ ] Les tâches janitor sont **bleues** et aucun spécialiste / manager ne les reçoit.
+- [ ] **Toilettes bouchées** : ventouse au placard de la gelée (reprenable après l'avoir posée), tenue cloche rouge
+      en haut ; 5 s sur les toilettes indiquées, un des 3 sons (coupé si on lâche avant) ; la ventouse disparaît.
+- [ ] **Inspection des extincteurs** : 3 extincteurs différents, pas de mail. Formation sécurité (spécialiste) garde
+      son mail.
+- [ ] **Distributeur bloqué** : 5 s sur le distributeur, 2 objets tombent dans le bac avec le bruit du distributeur ;
+      les manger valide les 2 étapes ; si un collègue en mange un, « Débloquer » revient. Log `[DISTRIB]`.
+
+**Tâches**
+- [ ] **Autographe-gate / STONKS** : faire signer une **copie** imprimée du dessin : validé (log `mon dessin=copie`).
+- [ ] **Inventaire du frigo** : la flèche vise le frigo, puis les poubelles une fois l'aliment en main.
+- [ ] **Audit cybersécurité** : popups plus fréquents (1 chance sur 5).
+- [ ] **GlucksTube** : plus de frame de la vidéo sur la télé du bureau ni dans les spams. Fenêtre noire : log
+      `[PC] texture vidéo`.
+
+**Usurpateur (à 3 minimum)**
+- [ ] Déguisé en un vrai joueur, perdre le costume à la main **et** au début d'une réunion : les **autres** voient
+      toujours son corps et sa tête. Sinon, log des autres : `[USURP] diag` / `[USURP] réparé`.
+- [ ] Déguisement au hasard (mannequin F7) : appliqué, pas d'erreur.
+
+**Cosmétiques**
+- [ ] **T-shirt Dr Jack Abbot**.
+- [ ] **Gros nœud noir** : derrière les cheveux sans les cacher, sur plusieurs coupes, en première personne, vu par
+      un autre, avec les Ponpons.
+- [ ] **Rose dragée** : bouton présent pour chemises, t-shirts, pantalons, jupes, chaussures ; couleurs des persos
+      enregistrés pas décalées.
+
+**Restes de la 0.9.5 jamais joués**
+- [ ] Tournée de café, mail en chaîne (pseudo avec accent / apostrophe), karaoké (remettre un CD après la coupure),
+      commande de fournitures sur 2 cartes de suite, tenue de Noël du janitor, Ponpons.
+- [ ] **Mise à jour auto 0.9.5 -> 0.10.0** (premier vrai passage) : log `[UPDATE]`.
 
 ## 2. À chaque release
 
